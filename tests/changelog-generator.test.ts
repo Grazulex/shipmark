@@ -158,7 +158,8 @@ describe('changelog-generator', () => {
 		});
 
 		it('should prepend to existing changelog', () => {
-			const existing = '# Changelog\n\nAll notable changes.\n\n## 0.9.0 (2024-01-01)\n\n- old feature\n';
+			const existing =
+				'# Changelog\n\nAll notable changes.\n\n## 0.9.0 (2024-01-01)\n\n- old feature\n';
 			const newEntry = '## 1.0.0 (2024-01-15)\n\n### Features\n\n- new feature\n\n';
 			const result = generateFullChangelog(existing, newEntry, '1.0.0');
 

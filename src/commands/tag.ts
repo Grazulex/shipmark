@@ -1,14 +1,14 @@
 import chalk from 'chalk';
+import Table from 'cli-table3';
 import type { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import Table from 'cli-table3';
+import { loadConfig } from '../core/config';
 import { git } from '../core/git';
 import * as semver from '../core/semver';
-import { loadConfig } from '../core/config';
 import { colors, icons } from '../utils/colors';
+import { GitError, ValidationError, handleError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import { GitError, handleError, ValidationError } from '../utils/errors';
 
 interface TagCreateOptions {
 	message?: string;
@@ -32,7 +32,7 @@ export function tagCommand(program: Command): void {
 		.option('-n, --limit <number>', 'Limit number of tags', '10')
 		.action(async (options) => {
 			try {
-				await listTags(parseInt(options.limit, 10));
+				await listTags(Number.parseInt(options.limit, 10));
 			} catch (error) {
 				handleError(error);
 			}
@@ -134,7 +134,7 @@ async function createTag(version: string, options: TagCreateOptions): Promise<vo
 	// Check if tag exists
 	if (git.tagExists(tagName)) {
 		throw new GitError(`Tag ${tagName} already exists`, [
-			'Delete the existing tag first: shipmark tag delete ' + tagName,
+			`Delete the existing tag first: shipmark tag delete ${tagName}`,
 			'Or use a different version number',
 		]);
 	}
@@ -169,9 +169,7 @@ async function deleteTag(version: string, options: TagDeleteOptions): Promise<vo
 
 	// Check if tag exists
 	if (!git.tagExists(tagName)) {
-		throw new GitError(`Tag ${tagName} does not exist`, [
-			'List available tags: shipmark tag list',
-		]);
+		throw new GitError(`Tag ${tagName} does not exist`, ['List available tags: shipmark tag list']);
 	}
 
 	// Confirmation
@@ -200,7 +198,7 @@ async function deleteTag(version: string, options: TagDeleteOptions): Promise<vo
 	if (options.remote && git.hasRemote()) {
 		spinner.start('Deleting tag from remote...');
 		try {
-			const { execSync } = await import('child_process');
+			const { execSync } = await import('node:child_process');
 			execSync(`git push origin :refs/tags/${tagName}`, { encoding: 'utf8' });
 			spinner.succeed('Tag deleted from remote');
 		} catch {

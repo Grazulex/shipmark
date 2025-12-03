@@ -1,5 +1,5 @@
-import { readdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 const distDir = './dist';
 
@@ -15,10 +15,7 @@ async function fixImports(dir) {
 			let content = await readFile(fullPath, 'utf8');
 
 			// Fix relative imports to add .js extension
-			content = content.replace(
-				/(from\s+['"])(\.\.?\/[^'"]+)(?<!\.js)(['"])/g,
-				'$1$2.js$3'
-			);
+			content = content.replace(/(from\s+['"])(\.\.?\/[^'"]+)(?<!\.js)(['"])/g, '$1$2.js$3');
 
 			// Fix dynamic imports
 			content = content.replace(

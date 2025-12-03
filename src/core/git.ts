@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 import { GitError } from '../utils/errors';
 
 export interface GitLogOptions {
@@ -79,10 +79,10 @@ export const git = {
 	getCommitsSinceTag(tag?: string): number {
 		if (!tag) {
 			const count = execSafe('git rev-list --count HEAD');
-			return count ? parseInt(count, 10) : 0;
+			return count ? Number.parseInt(count, 10) : 0;
 		}
 		const count = execSafe(`git rev-list --count ${tag}..HEAD`);
-		return count ? parseInt(count, 10) : 0;
+		return count ? Number.parseInt(count, 10) : 0;
 	},
 
 	log(options: GitLogOptions = {}): string {

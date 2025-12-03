@@ -1,8 +1,7 @@
 import type { BumpType, PrereleaseType, Version } from '../types/version';
 import { ValidationError } from '../utils/errors';
 
-const SEMVER_REGEX =
-	/^v?(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)(?:\.(\d+))?)?(?:\+(.+))?$/i;
+const SEMVER_REGEX = /^v?(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)(?:\.(\d+))?)?(?:\+(.+))?$/i;
 
 export function parse(version: string): Version {
 	const match = version.match(SEMVER_REGEX);
@@ -17,11 +16,11 @@ export function parse(version: string): Version {
 	const [, major, minor, patch, prerelease, prereleaseNum, build] = match;
 
 	return {
-		major: parseInt(major, 10),
-		minor: parseInt(minor, 10),
-		patch: parseInt(patch, 10),
+		major: Number.parseInt(major, 10),
+		minor: Number.parseInt(minor, 10),
+		patch: Number.parseInt(patch, 10),
 		prerelease: prerelease?.toLowerCase() as PrereleaseType | undefined,
-		prereleaseNumber: prereleaseNum ? parseInt(prereleaseNum, 10) : undefined,
+		prereleaseNumber: prereleaseNum ? Number.parseInt(prereleaseNum, 10) : undefined,
 		build,
 	};
 }
@@ -51,9 +50,9 @@ export function bump(
 	const newVersion = { ...version };
 
 	// Clear prerelease and build metadata for non-prerelease bumps
-	delete newVersion.prerelease;
-	delete newVersion.prereleaseNumber;
-	delete newVersion.build;
+	newVersion.prerelease = undefined;
+	newVersion.prereleaseNumber = undefined;
+	newVersion.build = undefined;
 
 	switch (type) {
 		case 'major':
@@ -122,8 +121,8 @@ export function compare(a: Version, b: Version): number {
 
 	// Compare prerelease type (rc > beta > alpha)
 	const prereleaseOrder: Record<string, number> = { alpha: 1, beta: 2, rc: 3 };
-	const aOrder = prereleaseOrder[a.prerelease!] || 0;
-	const bOrder = prereleaseOrder[b.prerelease!] || 0;
+	const aOrder = a.prerelease ? prereleaseOrder[a.prerelease] || 0 : 0;
+	const bOrder = b.prerelease ? prereleaseOrder[b.prerelease] || 0 : 0;
 
 	if (aOrder !== bOrder) return aOrder - bOrder;
 

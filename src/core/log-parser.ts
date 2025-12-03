@@ -98,7 +98,5 @@ export function sortCommitGroups(
 
 export function filterSignificantCommits(commits: ParsedCommit[]): ParsedCommit[] {
 	const ignoredTypes = new Set(['chore', 'ci', 'build', 'style']);
-	return commits.filter(
-		(c) => c.breaking || !ignoredTypes.has(c.type) || c.type === 'other'
-	);
+	return commits.filter((c) => c.breaking || !ignoredTypes.has(c.type) || c.type === 'other');
 }

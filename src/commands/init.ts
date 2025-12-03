@@ -1,15 +1,15 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { findConfigFile, saveConfig } from '../core/config';
 import { git } from '../core/git';
-import { saveConfig, findConfigFile } from '../core/config';
 import { DEFAULT_CONFIG } from '../types/config';
 import { colors, icons } from '../utils/colors';
-import { logger } from '../utils/logger';
 import { handleError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 interface InitOptions {
 	yes?: boolean;
@@ -71,7 +71,7 @@ async function runInit(options: InitOptions): Promise<void> {
 
 			if (initGit) {
 				spinner.start('Initializing git repository...');
-				const { execSync } = await import('child_process');
+				const { execSync } = await import('node:child_process');
 				execSync('git init', { cwd, encoding: 'utf8' });
 				spinner.succeed('Git repository initialized');
 			}
@@ -79,7 +79,7 @@ async function runInit(options: InitOptions): Promise<void> {
 	}
 
 	// Configuration
-	let config = { ...DEFAULT_CONFIG };
+	const config = { ...DEFAULT_CONFIG };
 
 	if (!options.yes) {
 		// Changelog file
@@ -161,9 +161,15 @@ async function runInit(options: InitOptions): Promise<void> {
 	console.log(`  ${colors.muted('Changelog:')}      ${config.changelog.file}`);
 	console.log(`  ${colors.muted('Tag prefix:')}     ${config.version.tagPrefix}`);
 	console.log(`  ${colors.muted('Commit msg:')}     ${config.version.commitMessage}`);
-	console.log(`  ${colors.muted('Auto push:')}      ${config.git.push ? colors.success('yes') : colors.warning('no')}`);
-	console.log(`  ${colors.muted('Sign tags:')}      ${config.git.signTags ? colors.success('yes') : colors.muted('no')}`);
-	console.log(`  ${colors.muted('Conventional:')}   ${config.commits.conventional ? colors.success('yes') : colors.muted('no')}`);
+	console.log(
+		`  ${colors.muted('Auto push:')}      ${config.git.push ? colors.success('yes') : colors.warning('no')}`
+	);
+	console.log(
+		`  ${colors.muted('Sign tags:')}      ${config.git.signTags ? colors.success('yes') : colors.muted('no')}`
+	);
+	console.log(
+		`  ${colors.muted('Conventional:')}   ${config.commits.conventional ? colors.success('yes') : colors.muted('no')}`
+	);
 
 	logger.newline();
 	logger.success('Shipmark initialized! Run `shipmark release` to create your first release.');

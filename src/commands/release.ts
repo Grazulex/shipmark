@@ -1,20 +1,24 @@
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import boxen from 'boxen';
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import {
+	generateChangelog,
+	generateFullChangelog,
+	previewChangelog,
+} from '../core/changelog-generator';
+import { getVersionFromPackageJson, loadConfig, updateVersionInFile } from '../core/config';
 import { git } from '../core/git';
 import { parseCommits } from '../core/log-parser';
-import { generateChangelog, generateFullChangelog, previewChangelog } from '../core/changelog-generator';
 import * as semver from '../core/semver';
-import { loadConfig, getVersionFromPackageJson, updateVersionInFile } from '../core/config';
-import type { BumpType, PrereleaseType, Version } from '../types/version';
 import { COMMIT_TYPES } from '../types/commit';
-import { colors, icons, colorizeBumpType } from '../utils/colors';
-import { logger } from '../utils/logger';
+import type { BumpType, PrereleaseType, Version } from '../types/version';
+import { colorizeBumpType, colors, icons } from '../utils/colors';
 import { GitError, handleError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 interface ReleaseOptions {
 	dryRun?: boolean;
@@ -179,8 +183,12 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	console.log(`  ${colors.muted('Version:')}    ${colors.highlight(newVersionStr)}`);
 	console.log(`  ${colors.muted('Tag:')}        ${colors.highlight(tagName)}`);
 	console.log(`  ${colors.muted('Commits:')}    ${colors.highlight(commits.length.toString())}`);
-	console.log(`  ${colors.muted('Changelog:')} ${options.skipChangelog ? colors.warning('skipped') : colors.success('yes')}`);
-	console.log(`  ${colors.muted('Push:')}       ${options.skipPush ? colors.warning('skipped') : colors.success('yes')}`);
+	console.log(
+		`  ${colors.muted('Changelog:')} ${options.skipChangelog ? colors.warning('skipped') : colors.success('yes')}`
+	);
+	console.log(
+		`  ${colors.muted('Push:')}       ${options.skipPush ? colors.warning('skipped') : colors.success('yes')}`
+	);
 	logger.newline();
 
 	if (options.dryRun) {
@@ -223,7 +231,10 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (!options.skipChangelog) {
 		spinner.start('Generating changelog...');
 		const today = new Date().toISOString().split('T')[0];
-		const remoteUrl = git.getRemoteUrl()?.replace(/\.git$/, '').replace(/^git@github.com:/, 'https://github.com/');
+		const remoteUrl = git
+			.getRemoteUrl()
+			?.replace(/\.git$/, '')
+			.replace(/^git@github.com:/, 'https://github.com/');
 
 		const changelogEntry = generateChangelog({
 			version: newVersionStr,
@@ -266,14 +277,11 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	// Done!
 	logger.newline();
 	console.log(
-		boxen(
-			`${icons.rocket} ${chalk.bold.green('Released')} ${chalk.bold.white(newVersionStr)}`,
-			{
-				padding: 1,
-				margin: { top: 0, bottom: 1, left: 0, right: 0 },
-				borderStyle: 'round',
-				borderColor: 'green',
-			}
-		)
+		boxen(`${icons.rocket} ${chalk.bold.green('Released')} ${chalk.bold.white(newVersionStr)}`, {
+			padding: 1,
+			margin: { top: 0, bottom: 1, left: 0, right: 0 },
+			borderStyle: 'round',
+			borderColor: 'green',
+		})
 	);
 }

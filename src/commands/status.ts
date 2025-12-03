@@ -1,14 +1,14 @@
 import chalk from 'chalk';
-import type { Command } from 'commander';
 import Table from 'cli-table3';
+import type { Command } from 'commander';
+import { getVersionFromPackageJson, loadConfig } from '../core/config';
 import { git } from '../core/git';
 import { parseCommits } from '../core/log-parser';
 import * as semver from '../core/semver';
-import { loadConfig, getVersionFromPackageJson } from '../core/config';
 import { COMMIT_TYPES } from '../types/commit';
 import { colors, icons } from '../utils/colors';
-import { logger } from '../utils/logger';
 import { handleError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 export function statusCommand(program: Command): void {
 	program
@@ -51,19 +51,39 @@ async function showStatus(verbose = false): Promise<void> {
 	const stateTable = new Table({
 		style: { head: [], border: ['gray'] },
 		chars: {
-			top: '', 'top-mid': '', 'top-left': '', 'top-right': '',
-			bottom: '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
-			left: '  ', 'left-mid': '', mid: '', 'mid-mid': '',
-			right: '', 'right-mid': '', middle: ' ',
+			top: '',
+			'top-mid': '',
+			'top-left': '',
+			'top-right': '',
+			bottom: '',
+			'bottom-mid': '',
+			'bottom-left': '',
+			'bottom-right': '',
+			left: '  ',
+			'left-mid': '',
+			mid: '',
+			'mid-mid': '',
+			right: '',
+			'right-mid': '',
+			middle: ' ',
 		},
 	});
 
 	stateTable.push(
 		[colors.muted('Branch:'), colors.accent(currentBranch)],
-		[colors.muted('Package version:'), packageVersion ? colors.accent(packageVersion) : colors.warning('not set')],
+		[
+			colors.muted('Package version:'),
+			packageVersion ? colors.accent(packageVersion) : colors.warning('not set'),
+		],
 		[colors.muted('Latest tag:'), latestTag ? colors.accent(latestTag) : colors.warning('no tags')],
-		[colors.muted('Remote:'), hasRemote ? colors.success('connected') : colors.warning('not configured')],
-		[colors.muted('Working tree:'), hasUncommitted ? colors.warning('uncommitted changes') : colors.success('clean')],
+		[
+			colors.muted('Remote:'),
+			hasRemote ? colors.success('connected') : colors.warning('not configured'),
+		],
+		[
+			colors.muted('Working tree:'),
+			hasUncommitted ? colors.warning('uncommitted changes') : colors.success('clean'),
+		]
 	);
 
 	console.log(stateTable.toString());
@@ -96,7 +116,7 @@ async function showStatus(verbose = false): Promise<void> {
 	let suggestedBump = 'patch';
 	if (breakingCount > 0) {
 		suggestedBump = 'major';
-	} else if (typeCounts['feat']) {
+	} else if (typeCounts.feat) {
 		suggestedBump = 'minor';
 	}
 
@@ -105,7 +125,9 @@ async function showStatus(verbose = false): Promise<void> {
 	logger.divider();
 	logger.newline();
 
-	console.log(`  ${colors.highlight(commitsSince.toString())} commits since ${latestTag || 'beginning'}`);
+	console.log(
+		`  ${colors.highlight(commitsSince.toString())} commits since ${latestTag || 'beginning'}`
+	);
 	logger.newline();
 
 	// Type breakdown
@@ -118,10 +140,21 @@ async function showStatus(verbose = false): Promise<void> {
 		const summaryTable = new Table({
 			style: { head: [], border: ['gray'] },
 			chars: {
-				top: '', 'top-mid': '', 'top-left': '', 'top-right': '',
-				bottom: '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
-				left: '  ', 'left-mid': '', mid: '', 'mid-mid': '',
-				right: '', 'right-mid': '', middle: '  ',
+				top: '',
+				'top-mid': '',
+				'top-left': '',
+				'top-right': '',
+				bottom: '',
+				'bottom-mid': '',
+				'bottom-left': '',
+				'bottom-right': '',
+				left: '  ',
+				'left-mid': '',
+				mid: '',
+				'mid-mid': '',
+				right: '',
+				'right-mid': '',
+				middle: '  ',
 			},
 		});
 
@@ -170,10 +203,14 @@ async function showStatus(verbose = false): Promise<void> {
 			logger.newline();
 
 			console.log(`  ${colors.muted('Current:')}    ${packageVersion}`);
-			console.log(`  ${colors.muted('Next:')}       ${colors.accent(nextVersionStr)} (${suggestedBump})`);
+			console.log(
+				`  ${colors.muted('Next:')}       ${colors.accent(nextVersionStr)} (${suggestedBump})`
+			);
 			logger.newline();
 
-			console.log(colors.muted(`  Run: ${colors.accent('shipmark release')} to create this release`));
+			console.log(
+				colors.muted(`  Run: ${colors.accent('shipmark release')} to create this release`)
+			);
 		} catch {
 			// Version parsing failed, skip suggestion
 		}

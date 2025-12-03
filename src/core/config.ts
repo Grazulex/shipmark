@@ -1,10 +1,15 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { ShipmarkConfig } from '../types/config';
 import { DEFAULT_CONFIG } from '../types/config';
 import { ConfigError } from '../utils/errors';
 
-const CONFIG_FILES = ['.shipmarkrc.yml', '.shipmarkrc.yaml', '.shipmarkrc.json', 'shipmark.config.js'];
+const CONFIG_FILES = [
+	'.shipmarkrc.yml',
+	'.shipmarkrc.yaml',
+	'.shipmarkrc.json',
+	'shipmark.config.js',
+];
 
 export function findConfigFile(cwd: string = process.cwd()): string | null {
 	for (const file of CONFIG_FILES) {
@@ -90,7 +95,7 @@ function parseSimpleYaml(content: string): Record<string, any> {
 		// Parse value type
 		if (value === 'true') value = true;
 		else if (value === 'false') value = false;
-		else if (/^\d+$/.test(value)) value = parseInt(value, 10);
+		else if (/^\d+$/.test(value)) value = Number.parseInt(value, 10);
 		else if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
 		else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
 		else if (value.startsWith('[') && value.endsWith(']')) {
@@ -167,7 +172,7 @@ export function updateVersionInFile(
 	if (filePath.endsWith('.json')) {
 		const data = JSON.parse(content);
 		data.version = newVersion;
-		writeFileSync(fullPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
+		writeFileSync(fullPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
 		return;
 	}
 

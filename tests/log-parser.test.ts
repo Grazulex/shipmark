@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-	parseConventionalCommit,
-	parseCommits,
-	groupCommitsByType,
 	filterSignificantCommits,
+	groupCommitsByType,
+	parseCommits,
+	parseConventionalCommit,
 } from '../src/core/log-parser';
 import type { RawCommit } from '../src/types/commit';
 
@@ -124,9 +124,36 @@ describe('log-parser', () => {
 	describe('groupCommitsByType', () => {
 		it('should group commits by type', () => {
 			const commits = [
-				{ hash: '1', shortHash: '1', type: 'feat', subject: 'feature 1', body: '', author: '', date: '', breaking: false },
-				{ hash: '2', shortHash: '2', type: 'feat', subject: 'feature 2', body: '', author: '', date: '', breaking: false },
-				{ hash: '3', shortHash: '3', type: 'fix', subject: 'fix 1', body: '', author: '', date: '', breaking: false },
+				{
+					hash: '1',
+					shortHash: '1',
+					type: 'feat',
+					subject: 'feature 1',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+				{
+					hash: '2',
+					shortHash: '2',
+					type: 'feat',
+					subject: 'feature 2',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+				{
+					hash: '3',
+					shortHash: '3',
+					type: 'fix',
+					subject: 'fix 1',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
 			];
 
 			const typeLabels = { feat: 'Features', fix: 'Bug Fixes' };
@@ -138,8 +165,26 @@ describe('log-parser', () => {
 
 		it('should create breaking changes group', () => {
 			const commits = [
-				{ hash: '1', shortHash: '1', type: 'feat', subject: 'breaking', body: '', author: '', date: '', breaking: true },
-				{ hash: '2', shortHash: '2', type: 'feat', subject: 'normal', body: '', author: '', date: '', breaking: false },
+				{
+					hash: '1',
+					shortHash: '1',
+					type: 'feat',
+					subject: 'breaking',
+					body: '',
+					author: '',
+					date: '',
+					breaking: true,
+				},
+				{
+					hash: '2',
+					shortHash: '2',
+					type: 'feat',
+					subject: 'normal',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
 			];
 
 			const typeLabels = { feat: 'Features' };
@@ -152,10 +197,46 @@ describe('log-parser', () => {
 	describe('filterSignificantCommits', () => {
 		it('should filter out chore, ci, build, style commits', () => {
 			const commits = [
-				{ hash: '1', shortHash: '1', type: 'feat', subject: 'feature', body: '', author: '', date: '', breaking: false },
-				{ hash: '2', shortHash: '2', type: 'chore', subject: 'chore', body: '', author: '', date: '', breaking: false },
-				{ hash: '3', shortHash: '3', type: 'ci', subject: 'ci', body: '', author: '', date: '', breaking: false },
-				{ hash: '4', shortHash: '4', type: 'fix', subject: 'fix', body: '', author: '', date: '', breaking: false },
+				{
+					hash: '1',
+					shortHash: '1',
+					type: 'feat',
+					subject: 'feature',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+				{
+					hash: '2',
+					shortHash: '2',
+					type: 'chore',
+					subject: 'chore',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+				{
+					hash: '3',
+					shortHash: '3',
+					type: 'ci',
+					subject: 'ci',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+				{
+					hash: '4',
+					shortHash: '4',
+					type: 'fix',
+					subject: 'fix',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
 			];
 
 			const result = filterSignificantCommits(commits);
@@ -166,7 +247,16 @@ describe('log-parser', () => {
 
 		it('should keep breaking chore commits', () => {
 			const commits = [
-				{ hash: '1', shortHash: '1', type: 'chore', subject: 'breaking chore', body: '', author: '', date: '', breaking: true },
+				{
+					hash: '1',
+					shortHash: '1',
+					type: 'chore',
+					subject: 'breaking chore',
+					body: '',
+					author: '',
+					date: '',
+					breaking: true,
+				},
 			];
 
 			const result = filterSignificantCommits(commits);

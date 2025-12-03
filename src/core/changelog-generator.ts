@@ -16,9 +16,7 @@ export function generateChangelog(options: ChangelogOptions): string {
 	const lines: string[] = [];
 
 	// Header
-	const versionHeader = repoUrl
-		? `[${version}](${repoUrl}/releases/tag/v${version})`
-		: version;
+	const versionHeader = repoUrl ? `[${version}](${repoUrl}/releases/tag/v${version})` : version;
 	lines.push(`## ${versionHeader} (${date})`);
 	lines.push('');
 
@@ -44,11 +42,7 @@ export function generateChangelog(options: ChangelogOptions): string {
 	return lines.join('\n');
 }
 
-function formatCommitLine(
-	commit: ParsedCommit,
-	config: ChangelogConfig,
-	repoUrl?: string
-): string {
+function formatCommitLine(commit: ParsedCommit, config: ChangelogConfig, repoUrl?: string): string {
 	let line = '- ';
 
 	// Scope
@@ -79,7 +73,8 @@ export function generateFullChangelog(
 	newEntry: string,
 	version: string
 ): string {
-	const header = '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
+	const header =
+		'# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
 
 	// Check if this version already exists
 	const versionPattern = new RegExp(`^## \\[?${escapeRegex(version)}\\]?`, 'm');
@@ -92,9 +87,7 @@ export function generateFullChangelog(
 
 		if (nextVersionMatch !== -1) {
 			return (
-				existingContent.slice(0, versionStart) +
-				newEntry +
-				afterVersion.slice(nextVersionMatch)
+				existingContent.slice(0, versionStart) + newEntry + afterVersion.slice(nextVersionMatch)
 			);
 		}
 
@@ -107,9 +100,7 @@ export function generateFullChangelog(
 		const headerEnd = existingContent.indexOf('\n\n', existingContent.indexOf('\n') + 1);
 		if (headerEnd !== -1) {
 			return (
-				existingContent.slice(0, headerEnd + 2) +
-				newEntry +
-				existingContent.slice(headerEnd + 2)
+				existingContent.slice(0, headerEnd + 2) + newEntry + existingContent.slice(headerEnd + 2)
 			);
 		}
 	}
@@ -122,7 +113,10 @@ function escapeRegex(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function previewChangelog(commits: ParsedCommit[], typeLabels: Record<string, string>): string[] {
+export function previewChangelog(
+	commits: ParsedCommit[],
+	typeLabels: Record<string, string>
+): string[] {
 	const groups = groupCommitsByType(commits, typeLabels);
 	const sortedGroups = sortCommitGroups(groups, ['breaking', ...COMMIT_TYPE_ORDER]);
 	const lines: string[] = [];

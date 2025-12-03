@@ -158,8 +158,20 @@ describe('semver', () => {
 		});
 
 		it('should compare prerelease types', () => {
-			const alpha = { major: 1, minor: 0, patch: 0, prerelease: 'alpha' as const, prereleaseNumber: 1 };
-			const beta = { major: 1, minor: 0, patch: 0, prerelease: 'beta' as const, prereleaseNumber: 1 };
+			const alpha = {
+				major: 1,
+				minor: 0,
+				patch: 0,
+				prerelease: 'alpha' as const,
+				prereleaseNumber: 1,
+			};
+			const beta = {
+				major: 1,
+				minor: 0,
+				patch: 0,
+				prerelease: 'beta' as const,
+				prereleaseNumber: 1,
+			};
 			const rc = { major: 1, minor: 0, patch: 0, prerelease: 'rc' as const, prereleaseNumber: 1 };
 
 			expect(semver.compare(beta, alpha)).toBeGreaterThan(0);

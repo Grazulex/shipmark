@@ -2,13 +2,13 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
+import { getVersionFromPackageJson, loadConfig, updateVersionInFile } from '../core/config';
 import { git } from '../core/git';
 import * as semver from '../core/semver';
-import { loadConfig, getVersionFromPackageJson, updateVersionInFile } from '../core/config';
 import type { BumpType, PrereleaseType } from '../types/version';
-import { colors, icons, colorizeBumpType } from '../utils/colors';
+import { colorizeBumpType, colors, icons } from '../utils/colors';
+import { ValidationError, handleError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import { handleError, ValidationError } from '../utils/errors';
 
 interface VersionBumpOptions {
 	prerelease?: string;
@@ -96,7 +96,9 @@ async function showVersion(): Promise<void> {
 
 		const commitsSince = git.getCommitsSinceTag(latestTag);
 		if (commitsSince > 0) {
-			console.log(`  ${colors.muted('Commits:')}      ${colors.warning(commitsSince + ' uncommitted changes')}`);
+			console.log(
+				`  ${colors.muted('Commits:')}      ${colors.warning(`${commitsSince} uncommitted changes`)}`
+			);
 		}
 	}
 
@@ -129,10 +131,18 @@ async function bumpVersion(type: string | undefined, options: VersionBumpOptions
 	let bumpType: BumpType;
 
 	if (type) {
-		const validTypes: BumpType[] = ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'];
+		const validTypes: BumpType[] = [
+			'major',
+			'minor',
+			'patch',
+			'premajor',
+			'preminor',
+			'prepatch',
+			'prerelease',
+		];
 		if (!validTypes.includes(type as BumpType)) {
 			throw new ValidationError(`Invalid bump type: ${type}`, [
-				'Valid types: ' + validTypes.join(', '),
+				`Valid types: ${validTypes.join(', ')}`,
 			]);
 		}
 		bumpType = type as BumpType;
