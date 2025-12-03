@@ -27,6 +27,7 @@ interface ReleaseOptions {
 	skipPush?: boolean;
 	prerelease?: string;
 	yes?: boolean;
+	ci?: string;
 }
 
 export function releaseCommand(program: Command): void {
@@ -39,6 +40,7 @@ export function releaseCommand(program: Command): void {
 		.option('--skip-push', 'Skip pushing to remote')
 		.option('-p, --prerelease <type>', 'Create prerelease (alpha, beta, rc)')
 		.option('-y, --yes', 'Skip confirmation prompts')
+		.option('--ci <bump>', 'CI mode: non-interactive release (patch, minor, major, auto)')
 		.action(async (options: ReleaseOptions) => {
 			try {
 				await runRelease(options);
@@ -48,13 +50,23 @@ export function releaseCommand(program: Command): void {
 		});
 }
 
+function detectBumpType(commits: Array<{ type: string; breaking: boolean }>): BumpType {
+	const hasBreaking = commits.some((c) => c.breaking);
+	const hasFeature = commits.some((c) => c.type === 'feat');
+
+	if (hasBreaking) return 'major';
+	if (hasFeature) return 'minor';
+	return 'patch';
+}
+
 async function runRelease(options: ReleaseOptions): Promise<void> {
 	const spinner = ora();
 	const cwd = process.cwd();
 	const config = loadConfig(cwd);
+	const isCiMode = !!options.ci;
 
 	// Check git repository
-	spinner.start('Checking git repository...');
+	if (!isCiMode) spinner.start('Checking git repository...');
 	git.ensureRepo();
 
 	if (!git.hasCommits()) {
@@ -64,7 +76,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		]);
 	}
 
-	spinner.succeed('Git repository OK');
+	if (!isCiMode) spinner.succeed('Git repository OK');
 
 	// Get current version
 	const currentVersionStr = getVersionFromPackageJson(cwd);
@@ -74,20 +86,22 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 
 	if (currentVersionStr) {
 		currentVersion = semver.parse(currentVersionStr);
-		logger.info(`Current version: ${colors.accent(currentVersionStr)}`);
+		if (!isCiMode) logger.info(`Current version: ${colors.accent(currentVersionStr)}`);
 	} else if (latestTag) {
 		currentVersion = semver.parse(latestTag);
-		logger.info(`Latest tag: ${colors.accent(latestTag)}`);
+		if (!isCiMode) logger.info(`Latest tag: ${colors.accent(latestTag)}`);
 	} else {
 		currentVersion = semver.parse('0.0.0');
-		logger.info('No version found, starting from 0.0.0');
+		if (!isCiMode) logger.info('No version found, starting from 0.0.0');
 	}
 
 	// Get commits since last tag
 	const commitsSince = git.getCommitsSinceTag(latestTag || undefined);
-	logger.info(`${colors.highlight(commitsSince.toString())} commits since last release`);
+	if (!isCiMode) {
+		logger.info(`${colors.highlight(commitsSince.toString())} commits since last release`);
+	}
 
-	if (commitsSince === 0 && !options.yes) {
+	if (commitsSince === 0 && !options.yes && !isCiMode) {
 		const { proceed } = await inquirer.prompt([
 			{
 				type: 'confirm',
@@ -104,14 +118,14 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	}
 
 	// Fetch and parse commits
-	spinner.start('Fetching commits...');
+	if (!isCiMode) spinner.start('Fetching commits...');
 	const logOutput = git.log({ from: latestTag || undefined });
 	const rawCommits = git.parseLogOutput(logOutput);
 	const commits = parseCommits(rawCommits);
-	spinner.succeed(`Found ${commits.length} commits`);
+	if (!isCiMode) spinner.succeed(`Found ${commits.length} commits`);
 
-	// Preview changelog
-	if (commits.length > 0) {
+	// Preview changelog (not in CI mode unless dry-run)
+	if (commits.length > 0 && (!isCiMode || options.dryRun)) {
 		logger.header('Changelog Preview');
 		const preview = previewChangelog(commits, { ...COMMIT_TYPES, ...config.changelog.types });
 		for (const line of preview) {
@@ -122,16 +136,34 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 
 	// Select version bump
 	const prereleaseType = (options.prerelease as PrereleaseType) || 'alpha';
-	const bumpOptions = semver.getBumpOptions(currentVersion, prereleaseType);
 
 	let selectedBump: BumpType;
 	let newVersionStr: string;
 
-	if (options.yes && options.prerelease) {
+	// CI mode: non-interactive bump selection
+	if (isCiMode) {
+		const ciBump = options.ci?.toLowerCase() || 'auto';
+
+		if (ciBump === 'auto') {
+			selectedBump = detectBumpType(commits);
+		} else if (
+			['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease'].includes(ciBump)
+		) {
+			selectedBump = ciBump as BumpType;
+		} else {
+			throw new GitError(`Invalid CI bump type: ${ciBump}`, [
+				'Valid options: auto, major, minor, patch, premajor, preminor, prepatch, prerelease',
+			]);
+		}
+
+		const newVersion = semver.bump(currentVersion, selectedBump, prereleaseType);
+		newVersionStr = semver.format(newVersion);
+	} else if (options.yes && options.prerelease) {
 		selectedBump = 'prerelease';
 		const newVersion = semver.bump(currentVersion, selectedBump, prereleaseType);
 		newVersionStr = semver.format(newVersion);
 	} else {
+		const bumpOptions = semver.getBumpOptions(currentVersion, prereleaseType);
 		const choices = bumpOptions.map((opt) => ({
 			name: `${colorizeBumpType(opt.type).padEnd(20)} ${icons.arrow} ${colors.accent(opt.newVersion)}`,
 			value: opt.type,
@@ -183,6 +215,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	console.log(`  ${colors.muted('Version:')}    ${colors.highlight(newVersionStr)}`);
 	console.log(`  ${colors.muted('Tag:')}        ${colors.highlight(tagName)}`);
 	console.log(`  ${colors.muted('Commits:')}    ${colors.highlight(commits.length.toString())}`);
+	console.log(`  ${colors.muted('Bump:')}       ${colorizeBumpType(selectedBump)}`);
 	console.log(
 		`  ${colors.muted('Changelog:')} ${options.skipChangelog ? colors.warning('skipped') : colors.success('yes')}`
 	);
@@ -191,13 +224,45 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	);
 	logger.newline();
 
+	// Enhanced dry-run: show full changelog that would be generated
 	if (options.dryRun) {
+		if (!options.skipChangelog && commits.length > 0) {
+			const today = new Date().toISOString().split('T')[0];
+			const remoteUrl = git
+				.getRemoteUrl()
+				?.replace(/\.git$/, '')
+				.replace(/^git@github.com:/, 'https://github.com/');
+
+			const changelogEntry = generateChangelog({
+				version: newVersionStr,
+				date: today,
+				commits,
+				config: config.changelog,
+				repoUrl: remoteUrl || undefined,
+			});
+
+			logger.header('Changelog Output (dry-run)');
+			console.log(colors.muted('─'.repeat(50)));
+			console.log(changelogEntry);
+			console.log(colors.muted('─'.repeat(50)));
+			logger.newline();
+		}
+
 		logger.warning('Dry run mode - no changes will be made');
+		logger.newline();
+
+		// CI mode output
+		if (isCiMode) {
+			console.log(`SHIPMARK_VERSION=${newVersionStr}`);
+			console.log(`SHIPMARK_TAG=${tagName}`);
+			console.log(`SHIPMARK_BUMP=${selectedBump}`);
+		}
+
 		return;
 	}
 
-	// Confirmation
-	if (!options.yes) {
+	// Confirmation (skip in CI mode)
+	if (!options.yes && !isCiMode) {
 		const { confirm } = await inquirer.prompt([
 			{
 				type: 'confirm',
@@ -214,10 +279,10 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	}
 
 	// Execute release
-	logger.newline();
+	if (!isCiMode) logger.newline();
 
 	// Update version files
-	spinner.start('Updating version files...');
+	if (!isCiMode) spinner.start('Updating version files...');
 	for (const file of config.version.files) {
 		try {
 			updateVersionInFile(file, newVersionStr, cwd);
@@ -225,11 +290,11 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			// File might not exist, skip
 		}
 	}
-	spinner.succeed('Version files updated');
+	if (!isCiMode) spinner.succeed('Version files updated');
 
 	// Generate changelog
 	if (!options.skipChangelog) {
-		spinner.start('Generating changelog...');
+		if (!isCiMode) spinner.start('Generating changelog...');
 		const today = new Date().toISOString().split('T')[0];
 		const remoteUrl = git
 			.getRemoteUrl()
@@ -249,39 +314,46 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		const fullChangelog = generateFullChangelog(existingChangelog, changelogEntry, newVersionStr);
 
 		writeFileSync(changelogPath, fullChangelog, 'utf8');
-		spinner.succeed('Changelog updated');
+		if (!isCiMode) spinner.succeed('Changelog updated');
 	}
 
 	// Create commit
-	spinner.start('Creating release commit...');
+	if (!isCiMode) spinner.start('Creating release commit...');
 	const commitMessage = config.version.commitMessage.replace('{version}', newVersionStr);
 	git.stageAll();
 	git.commit(commitMessage, [], config.git.signCommits);
-	spinner.succeed('Release commit created');
+	if (!isCiMode) spinner.succeed('Release commit created');
 
 	// Create tag
 	if (!options.skipTag) {
-		spinner.start('Creating tag...');
+		if (!isCiMode) spinner.start('Creating tag...');
 		const tagMessage = config.version.tagMessage.replace('{version}', newVersionStr);
 		git.createTag(tagName, tagMessage, config.git.signTags);
-		spinner.succeed(`Tag ${colors.accent(tagName)} created`);
+		if (!isCiMode) spinner.succeed(`Tag ${colors.accent(tagName)} created`);
 	}
 
 	// Push
 	if (!options.skipPush && git.hasRemote()) {
-		spinner.start('Pushing to remote...');
+		if (!isCiMode) spinner.start('Pushing to remote...');
 		git.push(config.git.pushTags && !options.skipTag);
-		spinner.succeed('Pushed to remote');
+		if (!isCiMode) spinner.succeed('Pushed to remote');
 	}
 
 	// Done!
-	logger.newline();
-	console.log(
-		boxen(`${icons.rocket} ${chalk.bold.green('Released')} ${chalk.bold.white(newVersionStr)}`, {
-			padding: 1,
-			margin: { top: 0, bottom: 1, left: 0, right: 0 },
-			borderStyle: 'round',
-			borderColor: 'green',
-		})
-	);
+	if (isCiMode) {
+		// CI mode: output variables for pipeline consumption
+		console.log(`SHIPMARK_VERSION=${newVersionStr}`);
+		console.log(`SHIPMARK_TAG=${tagName}`);
+		console.log(`SHIPMARK_BUMP=${selectedBump}`);
+	} else {
+		logger.newline();
+		console.log(
+			boxen(`${icons.rocket} ${chalk.bold.green('Released')} ${chalk.bold.white(newVersionStr)}`, {
+				padding: 1,
+				margin: { top: 0, bottom: 1, left: 0, right: 0 },
+				borderStyle: 'round',
+				borderColor: 'green',
+			})
+		);
+	}
 }
