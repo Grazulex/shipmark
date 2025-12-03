@@ -4,6 +4,7 @@ import boxen from 'boxen';
 import chalk from 'chalk';
 import { program } from 'commander';
 import { changelogCommand } from './commands/changelog';
+import { historyCommand } from './commands/history';
 import { initCommand } from './commands/init';
 import { releaseCommand } from './commands/release';
 import { statusCommand } from './commands/status';
@@ -64,6 +65,7 @@ statusCommand(program);
 changelogCommand(program);
 tagCommand(program);
 versionCommand(program);
+historyCommand(program);
 initCommand(program);
 
 // Global error handling

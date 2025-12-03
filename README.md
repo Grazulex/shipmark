@@ -167,6 +167,31 @@ shipmark tag create 1.2.0           # Create new tag
 shipmark tag delete v1.2.0 -r       # Delete from local and remote
 ```
 
+### `shipmark history`
+
+View release history with dates and commit counts.
+
+```bash
+shipmark history                    # Show release history
+shipmark history -d                 # Include commit details
+shipmark history -l 5               # Limit to last 5 releases
+```
+
+**Example output:**
+```
+Release History
+──────────────────────────────────────────────────
+┌─────────┬────────────┬─────────┐
+│ Version │ Date       │ Commits │
+├─────────┼────────────┼─────────┤
+│ 1.3.0   │ 2024-01-15 │ 5       │
+├─────────┼────────────┼─────────┤
+│ 1.2.0   │ 2024-01-10 │ 8       │
+├─────────┼────────────┼─────────┤
+│ 1.1.0   │ 2024-01-05 │ 3       │
+└─────────┴────────────┴─────────┘
+```
+
 ### `shipmark init`
 
 Initialize Shipmark configuration.

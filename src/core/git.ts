@@ -159,4 +159,33 @@ export const git = {
 	getConfig(key: string): string | null {
 		return execSafe(`git config --get ${key}`);
 	},
+
+	listTags(): string[] {
+		return this.getTags();
+	},
+
+	getTagDate(tag: string): string | null {
+		// Get the date of the tag (for annotated tags)
+		const date = execSafe(`git log -1 --format=%ai "${tag}"`);
+		return date || null;
+	},
+
+	getCommitCountBetweenTags(tag: string): number | null {
+		// Get previous tag
+		const prevTag = execSafe(`git describe --tags --abbrev=0 "${tag}^" 2>/dev/null`);
+		if (!prevTag) {
+			// First tag - count all commits up to this tag
+			const count = execSafe(`git rev-list --count "${tag}"`);
+			return count ? Number.parseInt(count, 10) : null;
+		}
+		const count = execSafe(`git rev-list --count "${prevTag}..${tag}"`);
+		return count ? Number.parseInt(count, 10) : null;
+	},
+
+	getCommitsBetweenTags(fromTag: string | undefined, toTag: string): string[] {
+		const range = fromTag ? `${fromTag}..${toTag}` : toTag;
+		const output = execSafe(`git log ${range} --pretty=format:"%s" --no-merges`);
+		if (!output) return [];
+		return output.split('\n').filter(Boolean);
+	},
 };
