@@ -58,6 +58,15 @@ shipmark release -y                 # Skip confirmations
 shipmark release --skip-push        # Don't push to remote
 ```
 
+### `shipmark status`
+
+Show release status and pending changes.
+
+```bash
+shipmark status                     # Show status summary
+shipmark status -v                  # Show with commit details
+```
+
 ### `shipmark changelog`
 
 Generate or update changelog from commits.
