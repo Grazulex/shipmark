@@ -6,6 +6,7 @@ import { program } from 'commander';
 import { changelogCommand } from './commands/changelog';
 import { initCommand } from './commands/init';
 import { releaseCommand } from './commands/release';
+import { statusCommand } from './commands/status';
 import { tagCommand } from './commands/tag';
 import { versionCommand } from './commands/version';
 import { handleError } from './utils/errors';
@@ -59,6 +60,7 @@ program.on('option:version', () => {
 
 // Register commands
 releaseCommand(program);
+statusCommand(program);
 changelogCommand(program);
 tagCommand(program);
 versionCommand(program);
