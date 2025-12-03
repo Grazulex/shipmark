@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/Grazulex/shipmark/releases/tag/v0.4.0) (2025-12-03)
+
+### Features
+
+- add history command to view release history ([8cb5f5c](https://github.com/Grazulex/shipmark/commit/8cb5f5ca7e6c4e17141801800f3c2ed9df718a5a))
+- add logo with transparent background ([c86115e](https://github.com/Grazulex/shipmark/commit/c86115ed07eb3d8b8b6fa608e1efc70a88e30925))
+
+### Bug Fixes
+
+- format package.json with tabs ([5493edb](https://github.com/Grazulex/shipmark/commit/5493edbeeb760b498aa10ff8966054a90c4eca6c))
 ## [0.3.0](https://github.com/Grazulex/shipmark/releases/tag/v0.3.0) (2025-12-03)
 
 ### Features
