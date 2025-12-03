@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo.png" alt="Shipmark Logo" width="120" />
+
 # Shipmark
 
 ### 🚀 Git Release Management Made Easy
