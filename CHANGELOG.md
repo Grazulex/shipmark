@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/Grazulex/shipmark/releases/tag/v0.3.0) (2025-12-03)
+
+### Features
+
+- add CI mode, improved dry-run, and revamped README ([175c61e](https://github.com/Grazulex/shipmark/commit/175c61ebd311a0a077ecea96a209fec338923469))
+
+### Styles
+
+- fix biome linting issues ([beda9b0](https://github.com/Grazulex/shipmark/commit/beda9b0178a85810e4513b4639ccd580c529257c))
 ## [0.2.0](https://github.com/Grazulex/shipmark/releases/tag/v0.2.0) (2025-12-03)
 
 ### Features
