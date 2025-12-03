@@ -10,10 +10,11 @@
 [![npm version](https://img.shields.io/npm/v/@grazulex/shipmark.svg?style=flat-square&logo=npm&color=cb3837)](https://www.npmjs.com/package/@grazulex/shipmark)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+[![Website](https://img.shields.io/badge/Website-shipmark.tech-4ECDC4?style=flat-square)](https://shipmark.tech)
 
 **Automate your release workflow with an interactive CLI that generates changelogs, manages versions, and creates tags—all without external dependencies.**
 
-[Quick Start](#-quick-start) • [Features](#-features) • [CI/CD](#-cicd-integration) • [Commands](#-commands)
+[Website](https://shipmark.tech) • [Quick Start](#-quick-start) • [Features](#-features) • [CI/CD](#-cicd-integration) • [Commands](#-commands)
 
 </div>
 
@@ -385,6 +386,7 @@ MIT © [Grazulex](https://github.com/Grazulex)
 
 <div align="center">
 
+**[🌐 Website](https://shipmark.tech)** •
 **[📦 npm](https://www.npmjs.com/package/@grazulex/shipmark)** •
 **[🐛 Issues](https://github.com/Grazulex/shipmark/issues)** •
 **[💬 Discussions](https://github.com/Grazulex/shipmark/discussions)**
