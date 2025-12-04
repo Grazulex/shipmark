@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createRequire } from 'node:module';
 import boxen from 'boxen';
 import chalk from 'chalk';
 import { program } from 'commander';
@@ -12,7 +13,9 @@ import { tagCommand } from './commands/tag';
 import { versionCommand } from './commands/version';
 import { handleError } from './utils/errors';
 
-const VERSION = '0.1.0';
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json');
+const VERSION = packageJson.version;
 
 const banner = `
 ${chalk.hex('#FF6B6B').bold('┌─────────────────────────────────────┐')}
