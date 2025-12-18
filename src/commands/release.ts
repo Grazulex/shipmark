@@ -12,6 +12,7 @@ import {
 } from '../core/changelog-generator';
 import { getVersionFromPackageJson, loadConfig, updateVersionInFile } from '../core/config';
 import { git } from '../core/git';
+import { executeRelease, getReleaseProviderInfo } from '../core/release-provider';
 import { parseCommits } from '../core/log-parser';
 import * as semver from '../core/semver';
 import { COMMIT_TYPES } from '../types/commit';
@@ -28,6 +29,7 @@ interface ReleaseOptions {
 	prerelease?: string;
 	yes?: boolean;
 	ci?: string;
+	createRelease?: boolean;
 }
 
 export function releaseCommand(program: Command): void {
@@ -41,6 +43,7 @@ export function releaseCommand(program: Command): void {
 		.option('-p, --prerelease <type>', 'Create prerelease (alpha, beta, rc)')
 		.option('-y, --yes', 'Skip confirmation prompts')
 		.option('--ci <bump>', 'CI mode: non-interactive release (patch, minor, major, auto)')
+		.option('-r, --create-release', 'Create GitHub/GitLab release using CLI (if available)')
 		.action(async (options: ReleaseOptions) => {
 			try {
 				await runRelease(options);
@@ -339,6 +342,26 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		if (!isCiMode) spinner.succeed('Pushed to remote');
 	}
 
+	// Create GitHub/GitLab release if requested
+	const releaseInfo = getReleaseProviderInfo(tagName, config.changelog.file);
+
+	if (options.createRelease && !options.skipPush && git.hasRemote()) {
+		if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
+			if (!isCiMode) spinner.start(`Creating ${releaseInfo.provider} release...`);
+			const result = executeRelease(tagName, config.changelog.file);
+			if (result.success) {
+				if (!isCiMode) spinner.succeed(`${releaseInfo.provider} release created`);
+			} else {
+				if (!isCiMode) spinner.fail(`Failed to create release: ${result.output}`);
+			}
+		} else if (releaseInfo.cli) {
+			logger.warning(`CLI '${releaseInfo.cli}' not found. Install it to create releases automatically.`);
+			if (releaseInfo.releaseCommand) {
+				logger.info(`Run manually: ${colors.accent(releaseInfo.releaseCommand)}`);
+			}
+		}
+	}
+
 	// Done!
 	if (isCiMode) {
 		// CI mode: output variables for pipeline consumption
@@ -355,5 +378,20 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 				borderColor: 'green',
 			})
 		);
+
+		// Show release hint if not already created
+		if (!options.createRelease && releaseInfo.provider !== 'unknown' && !options.skipPush) {
+			logger.newline();
+			if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
+				logger.info(`${icons.info} Create ${releaseInfo.provider} release:`);
+				console.log(`  ${colors.accent(releaseInfo.releaseCommand)}`);
+			} else if (releaseInfo.releaseUrl) {
+				logger.info(`${icons.info} Create ${releaseInfo.provider} release:`);
+				console.log(`  ${colors.accent(releaseInfo.releaseUrl)}`);
+			}
+			if (releaseInfo.cli && !releaseInfo.cliAvailable) {
+				console.log(colors.muted(`  Or install '${releaseInfo.cli}' CLI for automatic releases`));
+			}
+		}
 	}
 }
