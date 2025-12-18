@@ -12,8 +12,8 @@ import {
 } from '../core/changelog-generator';
 import { getVersionFromPackageJson, loadConfig, updateVersionInFile } from '../core/config';
 import { git } from '../core/git';
-import { executeRelease, getReleaseProviderInfo } from '../core/release-provider';
 import { parseCommits } from '../core/log-parser';
+import { executeRelease, getReleaseProviderInfo } from '../core/release-provider';
 import * as semver from '../core/semver';
 import { COMMIT_TYPES } from '../types/commit';
 import type { BumpType, PrereleaseType, Version } from '../types/version';
@@ -355,7 +355,9 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 				if (!isCiMode) spinner.fail(`Failed to create release: ${result.output}`);
 			}
 		} else if (releaseInfo.cli) {
-			logger.warning(`CLI '${releaseInfo.cli}' not found. Install it to create releases automatically.`);
+			logger.warning(
+				`CLI '${releaseInfo.cli}' not found. Install it to create releases automatically.`
+			);
 			if (releaseInfo.releaseCommand) {
 				logger.info(`Run manually: ${colors.accent(releaseInfo.releaseCommand)}`);
 			}

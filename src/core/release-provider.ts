@@ -63,9 +63,7 @@ function getWebReleaseUrl(remoteUrl: string, provider: GitProvider, tag: string)
 	if (provider === 'unknown') return null;
 
 	// Convert git URL to HTTPS URL
-	let httpsUrl = remoteUrl
-		.replace(/^git@([^:]+):/, 'https://$1/')
-		.replace(/\.git$/, '');
+	const httpsUrl = remoteUrl.replace(/^git@([^:]+):/, 'https://$1/').replace(/\.git$/, '');
 
 	switch (provider) {
 		case 'github':
@@ -79,7 +77,10 @@ function getWebReleaseUrl(remoteUrl: string, provider: GitProvider, tag: string)
 	}
 }
 
-export function getReleaseProviderInfo(tag: string, changelogFile = 'CHANGELOG.md'): ReleaseProviderInfo {
+export function getReleaseProviderInfo(
+	tag: string,
+	changelogFile = 'CHANGELOG.md'
+): ReleaseProviderInfo {
 	const remoteUrl = git.getRemoteUrl();
 
 	if (!remoteUrl) {
@@ -117,7 +118,10 @@ export function getReleaseProviderInfo(tag: string, changelogFile = 'CHANGELOG.m
 	};
 }
 
-export function executeRelease(tag: string, changelogFile = 'CHANGELOG.md'): { success: boolean; output: string } {
+export function executeRelease(
+	tag: string,
+	changelogFile = 'CHANGELOG.md'
+): { success: boolean; output: string } {
 	const info = getReleaseProviderInfo(tag, changelogFile);
 
 	if (!info.releaseCommand) {
