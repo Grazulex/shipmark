@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0](https://github.com/Grazulex/shipmark/releases/tag/v1.0.0) (2025-12-25)
+
+### Features
+
+- rebrand Shipmark to ShipMark for consistency ([bc0f556](https://github.com/Grazulex/shipmark/commit/bc0f556551d66c4d9d4743831dd37071bf4285f5))
+- add optional GitHub/GitLab release support ([671b6e1](https://github.com/Grazulex/shipmark/commit/671b6e16136bd138a04c000aa6a5a92d162dcc36))
+
+### Bug Fixes
+
+- read version dynamically from package.json ([6c4aa4d](https://github.com/Grazulex/shipmark/commit/6c4aa4da522095362139c35c86a198e761729e69))
+- format package.json ([24d4a76](https://github.com/Grazulex/shipmark/commit/24d4a769654ee33fa5fbd0fd066a0c2b33324a46))
+
+### Documentation
+
+- add website link to README ([cff0077](https://github.com/Grazulex/shipmark/commit/cff0077a850e6a04ff6653224cf5fc035fb22316))
+
+### Chores
+
+- **release:** 0.5.0 ([0ab41cd](https://github.com/Grazulex/shipmark/commit/0ab41cd734d9494fc58681e213ecdce96a8524fb))
 ## [0.5.0](https://github.com/Grazulex/shipmark/releases/tag/v0.5.0) (2025-12-18)
 
 ### Features
