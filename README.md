@@ -2,7 +2,7 @@
 
 <img src="logo.png" alt="Shipmark Logo" width="120" />
 
-# Shipmark
+# ShipMark
 
 ### 🚀 Git Release Management Made Easy
 **Beautiful CLI • Zero Dependencies • Full Control**
@@ -36,7 +36,7 @@ shipmark status
 shipmark release
 ```
 
-**That's it!** Shipmark will guide you through version selection, generate a changelog, create a tag, and push to remote.
+**That's it!** ShipMark will guide you through version selection, generate a changelog, create a tag, and push to remote.
 
 ---
 
@@ -195,7 +195,7 @@ Release History
 
 ### `shipmark init`
 
-Initialize Shipmark configuration.
+Initialize ShipMark configuration.
 
 ```bash
 shipmark init                       # Interactive setup
@@ -206,7 +206,7 @@ shipmark init -y                    # Use defaults
 
 ## 🤖 CI/CD Integration
 
-Shipmark works seamlessly in CI/CD pipelines with non-interactive mode.
+ShipMark works seamlessly in CI/CD pipelines with non-interactive mode.
 
 ### GitHub Actions
 
@@ -239,7 +239,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Shipmark
+      - name: Install ShipMark
         run: npm install -g @grazulex/shipmark
 
       - name: Create Release
@@ -263,7 +263,7 @@ jobs:
 
 ### CI Output Variables
 
-In CI mode, Shipmark outputs variables for pipeline consumption:
+In CI mode, ShipMark outputs variables for pipeline consumption:
 
 ```bash
 SHIPMARK_VERSION=1.3.0
@@ -275,7 +275,7 @@ SHIPMARK_BUMP=minor
 
 ## ⚙️ Configuration
 
-Shipmark uses `.shipmarkrc.yml` for configuration:
+ShipMark uses `.shipmarkrc.yml` for configuration:
 
 ```yaml
 changelog:
@@ -303,7 +303,7 @@ git:
 
 ## 📋 Conventional Commits
 
-Shipmark parses [Conventional Commits](https://www.conventionalcommits.org/) to organize your changelog:
+ShipMark parses [Conventional Commits](https://www.conventionalcommits.org/) to organize your changelog:
 
 | Prefix | Section | Bump |
 |--------|---------|------|
@@ -356,7 +356,7 @@ shipmark --version
 
 ## 📊 Comparison
 
-| Feature | Shipmark | semantic-release | release-it | standard-version |
+| Feature | ShipMark | semantic-release | release-it | standard-version |
 |---------|----------|------------------|------------|------------------|
 | **Zero Config** | ✅ | ❌ | ⚠️ | ⚠️ |
 | **Interactive Mode** | ✅ | ❌ | ✅ | ❌ |
@@ -395,6 +395,6 @@ MIT © [Grazulex](https://github.com/Grazulex)
 
 **Built with ❤️ for developers who value simplicity**
 
-*Star this repo if Shipmark helps your workflow!* ⭐
+*Star this repo if ShipMark helps your workflow!* ⭐
 
 </div>

@@ -19,7 +19,7 @@ interface InitOptions {
 export function initCommand(program: Command): void {
 	program
 		.command('init')
-		.description('Initialize Shipmark configuration')
+		.description('Initialize ShipMark configuration')
 		.option('-y, --yes', 'Use default configuration')
 		.option('-f, --force', 'Overwrite existing configuration')
 		.action(async (options: InitOptions) => {
@@ -36,7 +36,7 @@ async function runInit(options: InitOptions): Promise<void> {
 	const cwd = process.cwd();
 
 	logger.newline();
-	console.log(chalk.bold(`${icons.rocket} Shipmark Setup`));
+	console.log(chalk.bold(`${icons.rocket} ShipMark Setup`));
 	logger.divider();
 	logger.newline();
 
@@ -172,6 +172,6 @@ async function runInit(options: InitOptions): Promise<void> {
 	);
 
 	logger.newline();
-	logger.success('Shipmark initialized! Run `shipmark release` to create your first release.');
+	logger.success('ShipMark initialized! Run `shipmark release` to create your first release.');
 	logger.newline();
 }
