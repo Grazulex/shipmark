@@ -1,8 +1,8 @@
-# Shipmark - Project Guide
+# ShipMark - Project Guide
 
 ## Overview
 
-Shipmark is a CLI tool for managing Git releases, changelogs, and versioning. It provides a beautiful, interactive terminal experience without requiring external dependencies like GitHub CLI or GitLab CLI.
+ShipMark is a CLI tool for managing Git releases, changelogs, and versioning. It provides a beautiful, interactive terminal experience without requiring external dependencies like GitHub CLI or GitLab CLI.
 
 ## Tech Stack
 

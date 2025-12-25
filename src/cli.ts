@@ -31,7 +31,7 @@ function showBanner(): void {
 function showVersion(): void {
 	const info = boxen(
 		[
-			`${chalk.hex('#4ECDC4').bold('Shipmark')} ${chalk.white(`v${VERSION}`)}`,
+			`${chalk.hex('#4ECDC4').bold('ShipMark')} ${chalk.white(`v${VERSION}`)}`,
 			'',
 			`${chalk.gray('Node:')} ${process.version}`,
 			`${chalk.gray('Platform:')} ${process.platform}`,
