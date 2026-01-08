@@ -36,7 +36,9 @@
 		"cli-table3": "^0.6.5",
 		"commander": "^12.1.0",
 		"inquirer": "^12.2.0",
-		"ora": "^8.1.1"
+		"ora": "^8.1.1",
+		"smol-toml": "^1.6.0",
+		"yaml": "^2.8.2"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
