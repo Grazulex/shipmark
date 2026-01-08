@@ -164,6 +164,35 @@ export const git = {
 		return this.getTags();
 	},
 
+	createBranch(name: string): void {
+		exec(`git checkout -b "${name}"`);
+	},
+
+	checkoutBranch(name: string): void {
+		exec(`git checkout "${name}"`);
+	},
+
+	branchExists(name: string): boolean {
+		return execSafe(`git rev-parse --verify "${name}"`) !== null;
+	},
+
+	pushBranch(branch: string, setUpstream = true): void {
+		const upstreamFlag = setUpstream ? '-u origin' : '';
+		exec(`git push ${upstreamFlag} "${branch}"`);
+	},
+
+	getDefaultBranch(): string | null {
+		// Try to get default branch from remote
+		const remoteBranch = execSafe('git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null');
+		if (remoteBranch) {
+			return remoteBranch.replace('refs/remotes/origin/', '');
+		}
+		// Fallback: check if main or master exists
+		if (execSafe('git rev-parse --verify main 2>/dev/null')) return 'main';
+		if (execSafe('git rev-parse --verify master 2>/dev/null')) return 'master';
+		return null;
+	},
+
 	getTagDate(tag: string): string | null {
 		// Get the date of the tag (for annotated tags)
 		const date = execSafe(`git log -1 --format=%ai "${tag}"`);

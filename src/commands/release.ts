@@ -18,7 +18,12 @@ import {
 } from '../core/config';
 import { git } from '../core/git';
 import { parseCommits } from '../core/log-parser';
-import { executeRelease, getReleaseProviderInfo } from '../core/release-provider';
+import {
+	createPullRequest,
+	executeRelease,
+	getPullRequestInfo,
+	getReleaseProviderInfo,
+} from '../core/release-provider';
 import * as semver from '../core/semver';
 import { normalizeFileConfig } from '../handlers/types';
 import { COMMIT_TYPES } from '../types/commit';
@@ -36,6 +41,7 @@ interface ReleaseOptions {
 	yes?: boolean;
 	ci?: string;
 	createRelease?: boolean;
+	pr?: boolean | string;
 }
 
 export function releaseCommand(program: Command): void {
@@ -50,6 +56,7 @@ export function releaseCommand(program: Command): void {
 		.option('-y, --yes', 'Skip confirmation prompts')
 		.option('--ci <bump>', 'CI mode: non-interactive release (patch, minor, major, auto)')
 		.option('-r, --create-release', 'Create GitHub/GitLab release using CLI (if available)')
+		.option('--pr [branch]', 'Create release on a branch and open a PR (for protected branches)')
 		.action(async (options: ReleaseOptions) => {
 			try {
 				await runRelease(options);
@@ -219,6 +226,19 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 
 	const tagName = `${config.version.tagPrefix}${newVersionStr}`;
 
+	// Determine release branch name if --pr mode
+	const isPrMode = !!options.pr;
+	const currentBranch = git.getCurrentBranch();
+	const baseBranch = git.getDefaultBranch() || currentBranch;
+	let releaseBranch: string | null = null;
+
+	if (isPrMode) {
+		releaseBranch =
+			typeof options.pr === 'string' && options.pr !== ''
+				? options.pr
+				: `release/${config.version.tagPrefix}${newVersionStr}`;
+	}
+
 	// Summary
 	logger.header('Release Summary');
 	console.log(`  ${colors.muted('Version:')}    ${colors.highlight(newVersionStr)}`);
@@ -228,6 +248,10 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	console.log(
 		`  ${colors.muted('Changelog:')} ${options.skipChangelog ? colors.warning('skipped') : colors.success('yes')}`
 	);
+	if (isPrMode && releaseBranch) {
+		console.log(`  ${colors.muted('Branch:')}     ${colors.highlight(releaseBranch)}`);
+		console.log(`  ${colors.muted('PR target:')}  ${colors.highlight(baseBranch)}`);
+	}
 	console.log(
 		`  ${colors.muted('Push:')}       ${options.skipPush ? colors.warning('skipped') : colors.success('yes')}`
 	);
@@ -332,6 +356,19 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	// Execute release
 	if (!isCiMode) logger.newline();
 
+	// Create release branch if --pr mode
+	if (isPrMode && releaseBranch) {
+		if (!isCiMode) spinner.start(`Creating release branch ${colors.accent(releaseBranch)}...`);
+		if (git.branchExists(releaseBranch)) {
+			throw new GitError(`Branch '${releaseBranch}' already exists`, [
+				'Use a different branch name with --pr <branch-name>',
+				`Or delete the existing branch: git branch -D ${releaseBranch}`,
+			]);
+		}
+		git.createBranch(releaseBranch);
+		if (!isCiMode) spinner.succeed(`Release branch ${colors.accent(releaseBranch)} created`);
+	}
+
 	// Update version files
 	if (!isCiMode) spinner.start('Updating version files...');
 	updateVersionInFiles(config.version.files, newVersionStr, cwd);
@@ -378,16 +415,55 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	}
 
 	// Push
+	let prUrl: string | undefined;
 	if (!options.skipPush && git.hasRemote()) {
-		if (!isCiMode) spinner.start('Pushing to remote...');
-		git.push(config.git.pushTags && !options.skipTag);
-		if (!isCiMode) spinner.succeed('Pushed to remote');
+		if (isPrMode && releaseBranch) {
+			// PR mode: push the release branch and create PR
+			if (!isCiMode) spinner.start(`Pushing release branch ${colors.accent(releaseBranch)}...`);
+			git.pushBranch(releaseBranch, true);
+			if (config.git.pushTags && !options.skipTag) {
+				git.push(true); // Push tags separately
+			}
+			if (!isCiMode) spinner.succeed(`Release branch ${colors.accent(releaseBranch)} pushed`);
+
+			// Create PR
+			const prTitle = `chore(release): ${newVersionStr}`;
+			const prBody = `## Release ${newVersionStr}\\n\\nThis PR contains the release changes for version ${newVersionStr}.\\n\\n**Changes:**\\n- Version bump to ${newVersionStr}\\n- Changelog updated`;
+			const prInfo = getPullRequestInfo(releaseBranch, prTitle, prBody, baseBranch);
+
+			if (prInfo.cliAvailable && prInfo.prCommand) {
+				if (!isCiMode) spinner.start(`Creating ${prInfo.provider} pull request...`);
+				const prResult = createPullRequest(releaseBranch, prTitle, prBody, baseBranch);
+				if (prResult.success) {
+					prUrl = prResult.url;
+					if (!isCiMode) spinner.succeed('Pull request created');
+				} else {
+					if (!isCiMode) spinner.fail(`Failed to create PR: ${prResult.output}`);
+					if (prResult.url) {
+						logger.info(`Create PR manually: ${colors.accent(prResult.url)}`);
+					}
+				}
+			} else {
+				logger.info(`${icons.info} Create pull request manually:`);
+				if (prInfo.prUrl) {
+					console.log(`  ${colors.accent(prInfo.prUrl)}`);
+				}
+				if (prInfo.cli) {
+					console.log(colors.muted(`  Or install '${prInfo.cli}' CLI for automatic PR creation`));
+				}
+			}
+		} else {
+			// Normal mode: push to current branch
+			if (!isCiMode) spinner.start('Pushing to remote...');
+			git.push(config.git.pushTags && !options.skipTag);
+			if (!isCiMode) spinner.succeed('Pushed to remote');
+		}
 	}
 
-	// Create GitHub/GitLab release if requested
+	// Create GitHub/GitLab release if requested (only in non-PR mode)
 	const releaseInfo = getReleaseProviderInfo(tagName, config.changelog.file);
 
-	if (options.createRelease && !options.skipPush && git.hasRemote()) {
+	if (options.createRelease && !options.skipPush && git.hasRemote() && !isPrMode) {
 		if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
 			if (!isCiMode) spinner.start(`Creating ${releaseInfo.provider} release...`);
 			const result = executeRelease(tagName, config.changelog.file);
@@ -412,29 +488,74 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		console.log(`SHIPMARK_VERSION=${newVersionStr}`);
 		console.log(`SHIPMARK_TAG=${tagName}`);
 		console.log(`SHIPMARK_BUMP=${selectedBump}`);
+		if (isPrMode && releaseBranch) {
+			console.log(`SHIPMARK_BRANCH=${releaseBranch}`);
+			if (prUrl) {
+				console.log(`SHIPMARK_PR_URL=${prUrl}`);
+			}
+		}
 	} else {
 		logger.newline();
-		console.log(
-			boxen(`${icons.rocket} ${chalk.bold.green('Released')} ${chalk.bold.white(newVersionStr)}`, {
-				padding: 1,
-				margin: { top: 0, bottom: 1, left: 0, right: 0 },
-				borderStyle: 'round',
-				borderColor: 'green',
-			})
-		);
 
-		// Show release hint if not already created
-		if (!options.createRelease && releaseInfo.provider !== 'unknown' && !options.skipPush) {
-			logger.newline();
-			if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
-				logger.info(`${icons.info} Create ${releaseInfo.provider} release:`);
-				console.log(`  ${colors.accent(releaseInfo.releaseCommand)}`);
-			} else if (releaseInfo.releaseUrl) {
-				logger.info(`${icons.info} Create ${releaseInfo.provider} release:`);
-				console.log(`  ${colors.accent(releaseInfo.releaseUrl)}`);
+		if (isPrMode) {
+			// PR mode: show PR-specific message
+			const boxContent = prUrl
+				? `${icons.rocket} ${chalk.bold.green('Release PR created')} ${chalk.bold.white(newVersionStr)}\n\n${colors.muted('PR:')} ${colors.accent(prUrl)}`
+				: `${icons.rocket} ${chalk.bold.green('Release branch pushed')} ${chalk.bold.white(newVersionStr)}\n\n${colors.muted('Branch:')} ${colors.accent(releaseBranch || '')}`;
+
+			console.log(
+				boxen(boxContent, {
+					padding: 1,
+					margin: { top: 0, bottom: 1, left: 0, right: 0 },
+					borderStyle: 'round',
+					borderColor: 'cyan',
+				})
+			);
+
+			if (!prUrl) {
+				logger.info(`${icons.info} Next steps:`);
+				console.log(
+					`  1. Create a pull request from ${colors.accent(releaseBranch || '')} to ${colors.accent(baseBranch)}`
+				);
+				console.log('  2. Get the PR reviewed and merged');
+				console.log(`  3. The release tag ${colors.accent(tagName)} will be available after merge`);
+			} else {
+				logger.info(`${icons.info} Next steps:`);
+				console.log('  1. Get the PR reviewed and merged');
+				console.log(`  2. Create a ${releaseInfo.provider} release after merge:`);
+				if (releaseInfo.releaseCommand) {
+					console.log(`     ${colors.accent(releaseInfo.releaseCommand)}`);
+				} else if (releaseInfo.releaseUrl) {
+					console.log(`     ${colors.accent(releaseInfo.releaseUrl)}`);
+				}
 			}
-			if (releaseInfo.cli && !releaseInfo.cliAvailable) {
-				console.log(colors.muted(`  Or install '${releaseInfo.cli}' CLI for automatic releases`));
+		} else {
+			// Normal mode
+			console.log(
+				boxen(
+					`${icons.rocket} ${chalk.bold.green('Released')} ${chalk.bold.white(newVersionStr)}`,
+					{
+						padding: 1,
+						margin: { top: 0, bottom: 1, left: 0, right: 0 },
+						borderStyle: 'round',
+						borderColor: 'green',
+					}
+				)
+			);
+
+			// Show release hint if not already created
+			if (!options.createRelease && releaseInfo.provider !== 'unknown' && !options.skipPush) {
+				logger.newline();
+				if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
+					logger.info(`${icons.info} Create ${releaseInfo.provider} release:`);
+					console.log(`  ${colors.accent(releaseInfo.releaseCommand)}`);
+				} else if (releaseInfo.releaseUrl) {
+					logger.info(`${icons.info} Create ${releaseInfo.provider} release:`);
+					console.log(`  ${colors.accent(releaseInfo.releaseUrl)}`);
+				}
+				if (releaseInfo.cli && !releaseInfo.cliAvailable) {
+					console.log(colors.muted(`  Or install '${releaseInfo.cli}' CLI for automatic releases`));
+				}
 			}
 		}
 	}
