@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0](https://github.com/Grazulex/shipmark/releases/tag/v2.0.0) (2026-01-08)
+
+### ⚠ BREAKING CHANGES
+
+- add multi-file version support for Python and YAML ([683e2a1](https://github.com/Grazulex/shipmark/commit/683e2a1a046b8f1d5777a5eb2c3d578cf0db90c1))
+  - version.files now accepts objects with path/key/prefix
+
+### Features
+
+- add multi-file version support for Python and YAML ([683e2a1](https://github.com/Grazulex/shipmark/commit/683e2a1a046b8f1d5777a5eb2c3d578cf0db90c1))
+  - version.files now accepts objects with path/key/prefix
+
+### Chores
+
+- add .claude/ to gitignore ([ee618c3](https://github.com/Grazulex/shipmark/commit/ee618c3c0c37b22d71c49ab9e91eddea6f2f7e89))
+- **release:** 1.0.0 ([b4ede1e](https://github.com/Grazulex/shipmark/commit/b4ede1ef9f175bd0cdc6ca73f68b245dbb8579e3))
 ## [1.0.0](https://github.com/Grazulex/shipmark/releases/tag/v1.0.0) (2025-12-25)
 
 ### Features
