@@ -1,6 +1,6 @@
 {
   "name": "@grazulex/shipmark",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A beautiful CLI for managing Git releases, changelogs, and versioning",
   "type": "module",
   "main": "dist/cli.js",

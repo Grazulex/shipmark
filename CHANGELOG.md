@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0](https://github.com/Grazulex/shipmark/releases/tag/v2.1.0) (2026-01-08)
+
+### Features
+
+- add --pr option for protected branch release workflow (#6) ([2bf4dab](https://github.com/Grazulex/shipmark/commit/2bf4dab3ee081d23ea28fc18f56e248f421dd4af))
 ## [2.0.0](https://github.com/Grazulex/shipmark/releases/tag/v2.0.0) (2026-01-08)
 
 ### ⚠ BREAKING CHANGES
