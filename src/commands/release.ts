@@ -10,11 +10,17 @@ import {
 	generateFullChangelog,
 	previewChangelog,
 } from '../core/changelog-generator';
-import { getVersionFromPackageJson, loadConfig, updateVersionInFile } from '../core/config';
+import {
+	getVersionFromPackageJson,
+	loadConfig,
+	updateVersionInFiles,
+	validateVersionSync,
+} from '../core/config';
 import { git } from '../core/git';
 import { parseCommits } from '../core/log-parser';
 import { executeRelease, getReleaseProviderInfo } from '../core/release-provider';
 import * as semver from '../core/semver';
+import { normalizeFileConfig } from '../handlers/types';
 import { COMMIT_TYPES } from '../types/commit';
 import type { BumpType, PrereleaseType, Version } from '../types/version';
 import { colorizeBumpType, colors, icons } from '../utils/colors';
@@ -251,6 +257,18 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			logger.newline();
 		}
 
+		// Show files that would be updated
+		logger.header('Files to update');
+		for (const file of config.version.files) {
+			const fileConfig = normalizeFileConfig(file);
+			const currentVersion = getVersionFromPackageJson(cwd) || 'unknown';
+			const keyInfo = fileConfig.key ? `:${fileConfig.key}` : '';
+			console.log(
+				`  ${icons.success} ${fileConfig.path}${keyInfo} (${currentVersion} ${icons.arrow} ${newVersionStr})`
+			);
+		}
+		logger.newline();
+
 		logger.warning('Dry run mode - no changes will be made');
 		logger.newline();
 
@@ -262,6 +280,36 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		}
 
 		return;
+	}
+
+	// Check version sync if enabled
+	if (config.version.syncCheck && config.version.files.length > 1) {
+		const { synced, versions, mismatches } = validateVersionSync(config.version.files, cwd);
+		if (!synced) {
+			logger.warning('Version mismatch detected:');
+			for (const [filepath, version] of versions.entries()) {
+				const isMismatch = mismatches.includes(filepath);
+				const icon = isMismatch ? icons.error : icons.success;
+				console.log(`  ${icon} ${filepath}: ${version}`);
+			}
+			logger.newline();
+
+			if (!options.yes && !isCiMode) {
+				const { continueAnyway } = await inquirer.prompt([
+					{
+						type: 'confirm',
+						name: 'continueAnyway',
+						message: 'Versions differ. Continue anyway?',
+						default: false,
+					},
+				]);
+
+				if (!continueAnyway) {
+					logger.info('Release cancelled');
+					return;
+				}
+			}
+		}
 	}
 
 	// Confirmation (skip in CI mode)
@@ -286,13 +334,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 
 	// Update version files
 	if (!isCiMode) spinner.start('Updating version files...');
-	for (const file of config.version.files) {
-		try {
-			updateVersionInFile(file, newVersionStr, cwd);
-		} catch {
-			// File might not exist, skip
-		}
-	}
+	updateVersionInFiles(config.version.files, newVersionStr, cwd);
 	if (!isCiMode) spinner.succeed('Version files updated');
 
 	// Generate changelog

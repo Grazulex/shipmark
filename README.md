@@ -284,10 +284,16 @@ changelog:
   includeDate: true
 
 version:
-  files: ["package.json"]
+  files:
+    - "package.json"                    # Node.js
+    - "pyproject.toml"                  # Python (PEP 621, Poetry, Setuptools)
+    - path: "helm/values.yaml"          # Helm/YAML with custom key
+      key: "image.tag"
+      prefix: ""                        # No "v" prefix for Docker tags
   tagPrefix: "v"
   tagMessage: "Release {version}"
   commitMessage: "chore(release): {version}"
+  syncCheck: true                       # Warn if versions differ before release
 
 commits:
   conventional: true
@@ -297,6 +303,29 @@ git:
   pushTags: true
   signTags: false
   signCommits: false
+```
+
+### Multi-File Version Support
+
+ShipMark can update version in multiple files across different ecosystems:
+
+| File Type | Auto-detected | Config Example |
+|-----------|---------------|----------------|
+| `package.json` | Yes | `"package.json"` |
+| `pyproject.toml` | Yes (PEP 621, Poetry, Setuptools) | `"pyproject.toml"` |
+| `*.yaml` / `*.yml` | With key path | `path: "values.yaml"`, `key: "image.tag"` |
+
+**Example for React + Python monorepo:**
+
+```yaml
+version:
+  files:
+    - "frontend/package.json"
+    - "backend/pyproject.toml"
+    - path: "deploy/helm/values.yaml"
+      key: "image.tag"
+      prefix: ""
+  syncCheck: true
 ```
 
 ---

@@ -1,3 +1,5 @@
+import type { VersionFileEntry } from '../handlers/types';
+
 export interface ShipmarkConfig {
 	changelog: ChangelogConfig;
 	version: VersionConfig;
@@ -13,11 +15,24 @@ export interface ChangelogConfig {
 	includeAuthor: boolean;
 }
 
+/**
+ * Version file entry configuration.
+ * Can be a simple string path or an object with additional options.
+ */
+export interface VersionFileConfig {
+	path: string;
+	key?: string;
+	prefix?: string;
+}
+
 export interface VersionConfig {
-	files: string[];
+	/** List of files to update with version. Supports strings and objects with path/key/prefix. */
+	files: VersionFileEntry[];
 	tagPrefix: string;
 	tagMessage: string;
 	commitMessage: string;
+	/** Check that all version files are in sync before release */
+	syncCheck?: boolean;
 }
 
 export interface CommitConfig {

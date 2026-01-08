@@ -1,5 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import { getVersion, registry, setVersion } from '../handlers/index';
+import type { VersionFileEntry } from '../handlers/types';
 import type { ShipmarkConfig } from '../types/config';
 import { DEFAULT_CONFIG } from '../types/config';
 import { ConfigError } from '../utils/errors';
@@ -37,8 +40,8 @@ export function loadConfig(cwd: string = process.cwd()): ShipmarkConfig {
 		}
 
 		if (configPath.endsWith('.yml') || configPath.endsWith('.yaml')) {
-			// Simple YAML parsing for basic config
-			const userConfig = parseSimpleYaml(content);
+			// Use yaml library for full YAML support (including arrays of objects)
+			const userConfig = parseYaml(content) || {};
 			return mergeConfig(DEFAULT_CONFIG, userConfig);
 		}
 
@@ -50,7 +53,7 @@ export function loadConfig(cwd: string = process.cwd()): ShipmarkConfig {
 
 export function saveConfig(config: Partial<ShipmarkConfig>, cwd: string = process.cwd()): void {
 	const configPath = join(cwd, '.shipmarkrc.yml');
-	const content = stringifySimpleYaml(config);
+	const content = stringifyYaml(config);
 	writeFileSync(configPath, content, 'utf8');
 }
 
@@ -63,121 +66,71 @@ function mergeConfig(defaults: ShipmarkConfig, user: Partial<ShipmarkConfig>): S
 	};
 }
 
-// Simple YAML parser for basic flat/nested config
-function parseSimpleYaml(content: string): Record<string, any> {
-	const result: Record<string, any> = {};
-	const lines = content.split('\n');
-	let currentSection = '';
-	let currentIndent = 0;
-
-	for (const line of lines) {
-		// Skip comments and empty lines
-		if (line.trim().startsWith('#') || line.trim() === '') continue;
-
-		const indent = line.search(/\S/);
-		const trimmed = line.trim();
-
-		// Check if it's a section header (key without value)
-		if (trimmed.endsWith(':') && !trimmed.includes(': ')) {
-			currentSection = trimmed.slice(0, -1);
-			currentIndent = indent;
-			result[currentSection] = {};
-			continue;
-		}
-
-		// Parse key-value
-		const colonIndex = trimmed.indexOf(':');
-		if (colonIndex === -1) continue;
-
-		const key = trimmed.slice(0, colonIndex).trim();
-		let value: any = trimmed.slice(colonIndex + 1).trim();
-
-		// Parse value type
-		if (value === 'true') value = true;
-		else if (value === 'false') value = false;
-		else if (/^\d+$/.test(value)) value = Number.parseInt(value, 10);
-		else if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-		else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
-		else if (value.startsWith('[') && value.endsWith(']')) {
-			// Simple array parsing
-			value = value
-				.slice(1, -1)
-				.split(',')
-				.map((v: string) => v.trim().replace(/^['"]|['"]$/g, ''));
-		}
-
-		// Add to result
-		if (indent > currentIndent && currentSection) {
-			result[currentSection][key] = value;
-		} else {
-			result[key] = value;
-			currentSection = '';
-		}
-	}
-
-	return result;
-}
-
-function stringifySimpleYaml(obj: Record<string, any>, indent = 0): string {
-	const lines: string[] = [];
-	const prefix = '  '.repeat(indent);
-
-	for (const [key, value] of Object.entries(obj)) {
-		if (value === null || value === undefined) continue;
-
-		if (typeof value === 'object' && !Array.isArray(value)) {
-			lines.push(`${prefix}${key}:`);
-			lines.push(stringifySimpleYaml(value, indent + 1));
-		} else if (Array.isArray(value)) {
-			lines.push(`${prefix}${key}: [${value.map((v) => `"${v}"`).join(', ')}]`);
-		} else if (typeof value === 'string') {
-			lines.push(`${prefix}${key}: "${value}"`);
-		} else {
-			lines.push(`${prefix}${key}: ${value}`);
-		}
-	}
-
-	return lines.join('\n');
-}
-
+/**
+ * Get version from package.json.
+ * @deprecated Use getVersionFromFiles() instead for multi-file support.
+ */
 export function getVersionFromPackageJson(cwd: string = process.cwd()): string | null {
-	const packagePath = join(cwd, 'package.json');
-
-	if (!existsSync(packagePath)) {
-		return null;
-	}
-
-	try {
-		const content = readFileSync(packagePath, 'utf8');
-		const pkg = JSON.parse(content);
-		return pkg.version || null;
-	} catch {
-		return null;
-	}
+	return getVersion(['package.json'], cwd);
 }
 
+/**
+ * Get version from configured files.
+ * Returns the first successfully read version.
+ */
+export function getVersionFromFiles(
+	files: VersionFileEntry[],
+	cwd: string = process.cwd()
+): string | null {
+	return getVersion(files, cwd);
+}
+
+/**
+ * Update version in a single file.
+ * @deprecated Use updateVersionInFiles() instead for multi-file support.
+ */
 export function updateVersionInFile(
 	filePath: string,
 	newVersion: string,
 	cwd: string = process.cwd()
 ): void {
-	const fullPath = join(cwd, filePath);
+	const results = setVersion([filePath], newVersion, cwd);
+	const result = results[0];
 
-	if (!existsSync(fullPath)) {
-		throw new ConfigError(`File not found: ${filePath}`);
+	if (!result.success) {
+		throw new ConfigError(result.error || `Failed to update version in ${filePath}`);
+	}
+}
+
+/**
+ * Update version in multiple files using the handler registry.
+ */
+export function updateVersionInFiles(
+	files: VersionFileEntry[],
+	newVersion: string,
+	cwd: string = process.cwd()
+): { success: boolean; errors: string[] } {
+	const results = setVersion(files, newVersion, cwd);
+	const errors: string[] = [];
+
+	for (const result of results) {
+		if (!result.success && result.error) {
+			errors.push(`${result.filepath}: ${result.error}`);
+		}
 	}
 
-	const content = readFileSync(fullPath, 'utf8');
+	return {
+		success: errors.length === 0,
+		errors,
+	};
+}
 
-	if (filePath.endsWith('.json')) {
-		const data = JSON.parse(content);
-		data.version = newVersion;
-		writeFileSync(fullPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
-		return;
-	}
-
-	// Generic version replacement for other file types
-	const versionRegex = /("?version"?\s*[:=]\s*["'])([^"']+)(["'])/;
-	const updated = content.replace(versionRegex, `$1${newVersion}$3`);
-	writeFileSync(fullPath, updated, 'utf8');
+/**
+ * Validate that all version files are in sync.
+ */
+export function validateVersionSync(
+	files: VersionFileEntry[],
+	cwd: string = process.cwd()
+): { synced: boolean; versions: Map<string, string>; mismatches: string[] } {
+	return registry.validateVersionSync(files, cwd);
 }

@@ -2,9 +2,10 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
-import { getVersionFromPackageJson, loadConfig, updateVersionInFile } from '../core/config';
+import { getVersionFromPackageJson, loadConfig, updateVersionInFiles } from '../core/config';
 import { git } from '../core/git';
 import * as semver from '../core/semver';
+import { normalizeFileConfig } from '../handlers/types';
 import type { BumpType, PrereleaseType } from '../types/version';
 import { colorizeBumpType, colors, icons } from '../utils/colors';
 import { ValidationError, handleError } from '../utils/errors';
@@ -184,12 +185,14 @@ async function bumpVersion(type: string | undefined, options: VersionBumpOptions
 
 	// Update version files
 	spinner.start('Updating version files...');
+	const { success, errors } = updateVersionInFiles(config.version.files, newVersionStr, cwd);
 	for (const file of config.version.files) {
-		try {
-			updateVersionInFile(file, newVersionStr, cwd);
-			logger.step(`Updated ${file}`);
-		} catch {
-			// File might not exist, skip
+		const fileConfig = normalizeFileConfig(file);
+		logger.step(`Updated ${fileConfig.path}`);
+	}
+	if (!success) {
+		for (const error of errors) {
+			logger.warning(error);
 		}
 	}
 	spinner.succeed(`Version bumped to ${colors.accent(newVersionStr)}`);
@@ -226,11 +229,10 @@ async function setVersion(newVersion: string, options: { dryRun?: boolean }): Pr
 
 	// Update version files
 	spinner.start('Setting version...');
-	for (const file of config.version.files) {
-		try {
-			updateVersionInFile(file, cleanVersion, cwd);
-		} catch {
-			// File might not exist, skip
+	const { success, errors } = updateVersionInFiles(config.version.files, cleanVersion, cwd);
+	if (!success) {
+		for (const error of errors) {
+			logger.warning(error);
 		}
 	}
 	spinner.succeed(`Version set to ${colors.accent(cleanVersion)}`);
