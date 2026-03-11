@@ -399,10 +399,14 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		if (!isCiMode) spinner.succeed('Changelog updated');
 	}
 
-	// Create commit
+	// Create commit (only stage release-related files)
 	if (!isCiMode) spinner.start('Creating release commit...');
 	const commitMessage = config.version.commitMessage.replace('{version}', newVersionStr);
-	git.stageAll();
+	const releaseFiles = config.version.files.map((f) => normalizeFileConfig(f).path);
+	if (!options.skipChangelog) {
+		releaseFiles.push(config.changelog.file);
+	}
+	git.stage(releaseFiles);
 	git.commit(commitMessage, [], config.git.signCommits);
 	if (!isCiMode) spinner.succeed('Release commit created');
 
