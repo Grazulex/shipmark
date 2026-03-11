@@ -2,6 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2](https://github.com/Grazulex/shipmark/releases/tag/v2.1.2) (2026-03-11)
 ## [2.1.1](https://github.com/Grazulex/shipmark/releases/tag/v2.1.1) (2026-03-11)
 
 ### Features
