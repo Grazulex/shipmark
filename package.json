@@ -1,13 +1,18 @@
 {
 	"name": "@grazulex/shipmark",
-	"version": "2.1.0",
+	"version": "2.1.1",
 	"description": "A beautiful CLI for managing Git releases, changelogs, and versioning",
 	"type": "module",
 	"main": "dist/cli.js",
 	"bin": {
 		"shipmark": "./dist/cli.js"
 	},
-	"files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE",
+		"CHANGELOG.md"
+	],
 	"scripts": {
 		"dev": "tsx src/cli.ts",
 		"build": "tsc && node scripts/fix-imports.mjs",
@@ -20,7 +25,15 @@
 		"install:global": "npm run build && npm link",
 		"uninstall:global": "npm unlink -g @grazulex/shipmark"
 	},
-	"keywords": ["git", "release", "changelog", "version", "semver", "cli", "tag"],
+	"keywords": [
+		"git",
+		"release",
+		"changelog",
+		"version",
+		"semver",
+		"cli",
+		"tag"
+	],
 	"author": "Grazulex",
 	"license": "MIT",
 	"repository": {
