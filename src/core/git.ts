@@ -156,6 +156,11 @@ export const git = {
 		exec('git add -A');
 	},
 
+	stage(files: string[]): void {
+		if (files.length === 0) return;
+		exec(`git add ${files.map((f) => `"${f}"`).join(' ')}`);
+	},
+
 	getConfig(key: string): string | null {
 		return execSafe(`git config --get ${key}`);
 	},
