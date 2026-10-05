@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.4](https://github.com/Grazulex/shipmark/releases/tag/v2.1.4) (2026-10-05)
+
+### Bug Fixes
+
+- **release:** create the tag after merge in --pr mode (#15) ([b6a0b96](https://github.com/Grazulex/shipmark/commit/b6a0b96802681f2ad5a875fd4ca87810bc3463bc))
 ## [2.1.3](https://github.com/Grazulex/shipmark/releases/tag/v2.1.3) (2026-10-05)
 
 ### Bug Fixes
