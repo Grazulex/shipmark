@@ -6,6 +6,7 @@ import type { Command } from 'commander';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import {
+	buildTypeLabels,
 	generateChangelog,
 	generateFullChangelog,
 	previewChangelog,
@@ -26,11 +27,10 @@ import {
 } from '../core/release-provider';
 import * as semver from '../core/semver';
 import { normalizeFileConfig } from '../handlers/types';
-import { COMMIT_TYPES } from '../types/commit';
 import type { BumpType, PrereleaseType, Version } from '../types/version';
 import { colorizeBumpType, colors, icons } from '../utils/colors';
 import { GitError, handleError } from '../utils/errors';
-import { logger } from '../utils/logger';
+import { logger, warnAboutSkippedCommits } from '../utils/logger';
 
 interface ReleaseOptions {
 	dryRun?: boolean;
@@ -140,10 +140,13 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	const commits = parseCommits(rawCommits);
 	if (!isCiMode) spinner.succeed(`Found ${commits.length} commits`);
 
+	const typeLabels = buildTypeLabels(config.changelog, config.commits);
+	warnAboutSkippedCommits(commits, typeLabels);
+
 	// Preview changelog (not in CI mode unless dry-run)
 	if (commits.length > 0 && (!isCiMode || options.dryRun)) {
 		logger.header('Changelog Preview');
-		const preview = previewChangelog(commits, { ...COMMIT_TYPES, ...config.changelog.types });
+		const preview = previewChangelog(commits, typeLabels);
 		for (const line of preview) {
 			console.log(`  ${colors.muted(line)}`);
 		}
@@ -271,6 +274,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 				date: today,
 				commits,
 				config: config.changelog,
+				commitsConfig: config.commits,
 				repoUrl: remoteUrl || undefined,
 			});
 
@@ -388,6 +392,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			date: today,
 			commits,
 			config: config.changelog,
+			commitsConfig: config.commits,
 			repoUrl: remoteUrl || undefined,
 		});
 

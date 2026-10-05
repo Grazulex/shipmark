@@ -58,10 +58,10 @@ export function groupCommitsByType(
 		groups.set('breaking', breakingCommits);
 	}
 
-	// Group by type
+	// Group by type. A non-conventional commit carries the type 'other' and is
+	// included like any other type, as long as a label for it exists. See
+	// buildTypeLabels() for when that is the case.
 	for (const commit of commits) {
-		if (commit.type === 'other') continue;
-
 		const label = typeLabels[commit.type];
 		if (!label) continue;
 

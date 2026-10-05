@@ -296,13 +296,37 @@ version:
   syncCheck: true                       # Warn if versions differ before release
 
 commits:
-  conventional: true
+  conventional: true                    # false also lists non-conventional commits
 
 git:
   push: true
   pushTags: true
   signTags: false
   signCommits: false
+```
+
+### Non-Conventional Commits
+
+A commit that cannot be parsed as a conventional commit is grouped under the
+type `other`. With `commits.conventional: true` (the default) those commits stay
+out of the changelog, and ShipMark warns which ones it left out:
+
+```
+⚠ 1 commit(s) are not conventional commits and are left out of the changelog:
+  → 19f8503 PROJ-123: fixed the thing
+  → Set commits.conventional to false to include them.
+```
+
+Set `commits.conventional: false` to list them under an `Other` heading instead.
+Rename that heading through `changelog.types`:
+
+```yaml
+changelog:
+  types:
+    other: "Miscellaneous"
+
+commits:
+  conventional: false
 ```
 
 ### Multi-File Version Support

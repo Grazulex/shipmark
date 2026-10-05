@@ -1,6 +1,6 @@
 import type { ParsedCommit } from '../types/commit';
-import { COMMIT_TYPES, COMMIT_TYPE_ORDER } from '../types/commit';
-import type { ChangelogConfig } from '../types/config';
+import { COMMIT_TYPES, COMMIT_TYPE_ORDER, OTHER_COMMIT_LABEL } from '../types/commit';
+import type { ChangelogConfig, CommitConfig } from '../types/config';
 import { groupCommitsByType, sortCommitGroups } from './log-parser';
 
 export interface ChangelogOptions {
@@ -8,11 +8,31 @@ export interface ChangelogOptions {
 	date: string;
 	commits: ParsedCommit[];
 	config: ChangelogConfig;
+	commitsConfig?: CommitConfig;
 	repoUrl?: string;
 }
 
+/**
+ * Build the label per commit type. Commits that are not conventional commits
+ * are grouped under 'other' and only appear in the changelog when that type
+ * has a label: either one the user configured under `changelog.types`, or the
+ * default one, applied when `commits.conventional` is false.
+ */
+export function buildTypeLabels(
+	config: ChangelogConfig,
+	commitsConfig?: CommitConfig
+): Record<string, string> {
+	const typeLabels: Record<string, string> = { ...COMMIT_TYPES, ...config.types };
+
+	if (commitsConfig?.conventional === false && typeLabels.other === undefined) {
+		typeLabels.other = OTHER_COMMIT_LABEL;
+	}
+
+	return typeLabels;
+}
+
 export function generateChangelog(options: ChangelogOptions): string {
-	const { version, date, commits, config, repoUrl } = options;
+	const { version, date, commits, config, commitsConfig, repoUrl } = options;
 	const lines: string[] = [];
 
 	// Header
@@ -21,7 +41,7 @@ export function generateChangelog(options: ChangelogOptions): string {
 	lines.push('');
 
 	// Group commits
-	const typeLabels = { ...COMMIT_TYPES, ...config.types };
+	const typeLabels = buildTypeLabels(config, commitsConfig);
 	const groups = groupCommitsByType(commits, typeLabels);
 	const sortedGroups = sortCommitGroups(groups, ['breaking', ...COMMIT_TYPE_ORDER]);
 

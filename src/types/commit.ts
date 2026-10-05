@@ -40,6 +40,12 @@ export const COMMIT_TYPES: Record<string, string> = {
 	revert: 'Reverts',
 };
 
+/**
+ * Label for commits that are not conventional commits. Only applied when
+ * `commits.conventional` is false; see buildTypeLabels().
+ */
+export const OTHER_COMMIT_LABEL = 'Other';
+
 export const COMMIT_TYPE_ORDER = [
 	'breaking',
 	'feat',
@@ -52,4 +58,5 @@ export const COMMIT_TYPE_ORDER = [
 	'ci',
 	'chore',
 	'revert',
+	'other',
 ];
