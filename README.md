@@ -102,6 +102,16 @@ shipmark release --ci auto          # CI mode with auto version detection
 shipmark release --ci minor         # CI mode with specific bump
 shipmark release -p beta            # Create beta prerelease
 shipmark release --skip-push        # Don't push to remote
+shipmark release --pr               # Release through a PR (protected branches)
+```
+
+With `--pr`, the release commit is pushed on a `release/<tag>` branch and a pull request is
+opened, but no tag is created yet: a squash or rebase merge would leave it on a commit that
+never reaches the base branch. Once the PR is merged, tag the merged commit:
+
+```bash
+git checkout main && git pull
+shipmark tag create v1.2.3 --push
 ```
 
 ### `shipmark status`
