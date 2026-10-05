@@ -98,6 +98,44 @@ describe('packageJsonHandler', () => {
 			expect(content.dependencies).toEqual({ lodash: '^4.0.0' });
 		});
 
+		it('should preserve the original formatting', () => {
+			const pkgPath = join(TEST_DIR, 'package.json');
+			const original =
+				'{\n\t"name": "test",\n\t"version": "1.0.0",\n\t"files": ["dist", "README.md"],\n' +
+				'\t"keywords": ["git", "cli"]\n}\n';
+			writeFileSync(pkgPath, original);
+
+			packageJsonHandler.write('package.json', '2.0.0', TEST_DIR);
+
+			const content = require('node:fs').readFileSync(pkgPath, 'utf8');
+			expect(content).toBe(original.replace('"version": "1.0.0"', '"version": "2.0.0"'));
+		});
+
+		it('should only update the top-level version', () => {
+			const pkgPath = join(TEST_DIR, 'package.json');
+			const original =
+				'{\n  "name": "test",\n  "config": { "version": "9.9.9" },\n' +
+				'  "description": "\\"version\\": \\"0.0.1\\"",\n  "version": "1.0.0"\n}\n';
+			writeFileSync(pkgPath, original);
+
+			packageJsonHandler.write('package.json', '2.0.0', TEST_DIR);
+
+			const content = JSON.parse(require('node:fs').readFileSync(pkgPath, 'utf8'));
+			expect(content.version).toBe('2.0.0');
+			expect(content.config.version).toBe('9.9.9');
+			expect(content.description).toBe('"version": "0.0.1"');
+		});
+
+		it('should add the version when the field is missing', () => {
+			const pkgPath = join(TEST_DIR, 'package.json');
+			writeFileSync(pkgPath, JSON.stringify({ name: 'test' }, null, 2));
+
+			packageJsonHandler.write('package.json', '2.0.0', TEST_DIR);
+
+			const content = JSON.parse(require('node:fs').readFileSync(pkgPath, 'utf8'));
+			expect(content.version).toBe('2.0.0');
+		});
+
 		it('should throw for missing file', () => {
 			expect(() => {
 				packageJsonHandler.write('package.json', '1.0.0', TEST_DIR);

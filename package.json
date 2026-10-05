@@ -7,12 +7,7 @@
 	"bin": {
 		"shipmark": "dist/cli.js"
 	},
-	"files": [
-		"dist",
-		"README.md",
-		"LICENSE",
-		"CHANGELOG.md"
-	],
+	"files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
 	"scripts": {
 		"dev": "tsx src/cli.ts",
 		"build": "tsc && node scripts/fix-imports.mjs",
@@ -25,15 +20,7 @@
 		"install:global": "npm run build && npm link",
 		"uninstall:global": "npm unlink -g @grazulex/shipmark"
 	},
-	"keywords": [
-		"git",
-		"release",
-		"changelog",
-		"version",
-		"semver",
-		"cli",
-		"tag"
-	],
+	"keywords": ["git", "release", "changelog", "version", "semver", "cli", "tag"],
 	"author": "Grazulex",
 	"license": "MIT",
 	"repository": {
