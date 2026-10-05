@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.5](https://github.com/Grazulex/shipmark/releases/tag/v2.1.5) (2026-10-05)
+
+### Bug Fixes
+
+- **version:** preserve package.json formatting when bumping (#17) ([da2b865](https://github.com/Grazulex/shipmark/commit/da2b86507f482aa5d2e98fa41db4254fa8138114))
 ## [2.1.4](https://github.com/Grazulex/shipmark/releases/tag/v2.1.4) (2026-10-05)
 
 ### Bug Fixes
