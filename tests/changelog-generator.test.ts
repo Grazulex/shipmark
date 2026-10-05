@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+	buildTypeLabels,
 	generateChangelog,
 	generateFullChangelog,
 	previewChangelog,
 } from '../src/core/changelog-generator';
 import type { ParsedCommit } from '../src/types/commit';
-import type { ChangelogConfig } from '../src/types/config';
+import type { ChangelogConfig, CommitConfig } from '../src/types/config';
 
 describe('changelog-generator', () => {
 	const defaultConfig: ChangelogConfig = {
@@ -39,7 +40,67 @@ describe('changelog-generator', () => {
 		},
 	];
 
+	const nonConventionalCommit: ParsedCommit = {
+		hash: '789abc123def',
+		shortHash: '789abc1',
+		type: 'other',
+		subject: 'PROJ-123: fixed the thing',
+		body: '',
+		author: 'Test Author',
+		date: '2024-01-03',
+		breaking: false,
+	};
+
+	describe('buildTypeLabels', () => {
+		it('should not label other when conventional commits are required', () => {
+			const commitsConfig: CommitConfig = { conventional: true, allowCustomTypes: true };
+
+			expect(buildTypeLabels(defaultConfig, commitsConfig).other).toBeUndefined();
+		});
+
+		it('should not label other when no commit config is given', () => {
+			expect(buildTypeLabels(defaultConfig).other).toBeUndefined();
+		});
+
+		it('should label other when conventional commits are not required', () => {
+			const commitsConfig: CommitConfig = { conventional: false, allowCustomTypes: true };
+
+			expect(buildTypeLabels(defaultConfig, commitsConfig).other).toBe('Other');
+		});
+
+		it('should keep a configured label for other', () => {
+			const config: ChangelogConfig = { ...defaultConfig, types: { other: 'Overig' } };
+			const commitsConfig: CommitConfig = { conventional: false, allowCustomTypes: true };
+
+			expect(buildTypeLabels(config, commitsConfig).other).toBe('Overig');
+		});
+	});
+
 	describe('generateChangelog', () => {
+		it('should leave out non-conventional commits by default', () => {
+			const result = generateChangelog({
+				version: '1.0.0',
+				date: '2024-01-01',
+				commits: [...sampleCommits, nonConventionalCommit],
+				config: defaultConfig,
+			});
+
+			expect(result).not.toContain('PROJ-123: fixed the thing');
+		});
+
+		it('should include non-conventional commits when conventional is false', () => {
+			const result = generateChangelog({
+				version: '1.0.0',
+				date: '2024-01-01',
+				commits: [...sampleCommits, nonConventionalCommit],
+				config: defaultConfig,
+				commitsConfig: { conventional: false, allowCustomTypes: true },
+			});
+
+			expect(result).toContain('### Other');
+			expect(result).toContain('PROJ-123: fixed the thing');
+		});
+
 		it('should generate changelog with version header', () => {
 			const result = generateChangelog({
 				version: '1.0.0',

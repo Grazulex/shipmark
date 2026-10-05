@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 import ora from 'ora';
 import {
+	buildTypeLabels,
 	generateChangelog,
 	generateFullChangelog,
 	previewChangelog,
@@ -11,10 +12,9 @@ import {
 import { getVersionFromPackageJson, loadConfig } from '../core/config';
 import { git } from '../core/git';
 import { parseCommits } from '../core/log-parser';
-import { COMMIT_TYPES } from '../types/commit';
 import { colors } from '../utils/colors';
 import { handleError } from '../utils/errors';
-import { logger } from '../utils/logger';
+import { logger, warnAboutSkippedCommits } from '../utils/logger';
 
 interface ChangelogOptions {
 	from?: string;
@@ -70,13 +70,16 @@ async function runChangelog(options: ChangelogOptions): Promise<void> {
 		return;
 	}
 
+	const typeLabels = buildTypeLabels(config.changelog, config.commits);
+	warnAboutSkippedCommits(commits, typeLabels);
+
 	// Determine version
 	const version = options.version || getVersionFromPackageJson(cwd) || 'Unreleased';
 
 	// Preview mode
 	if (options.preview) {
 		logger.header(`Changelog Preview - ${version}`);
-		const preview = previewChangelog(commits, { ...COMMIT_TYPES, ...config.changelog.types });
+		const preview = previewChangelog(commits, typeLabels);
 		for (const line of preview) {
 			console.log(`  ${line}`);
 		}
@@ -96,6 +99,7 @@ async function runChangelog(options: ChangelogOptions): Promise<void> {
 		date: today,
 		commits,
 		config: config.changelog,
+		commitsConfig: config.commits,
 		repoUrl: remoteUrl || undefined,
 	});
 
@@ -113,7 +117,6 @@ async function runChangelog(options: ChangelogOptions): Promise<void> {
 	logger.newline();
 	logger.header('Summary');
 
-	const typeLabels = { ...COMMIT_TYPES, ...config.changelog.types };
 	const typeCounts: Record<string, number> = {};
 
 	for (const commit of commits) {

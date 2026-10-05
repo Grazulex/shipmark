@@ -163,6 +163,44 @@ describe('log-parser', () => {
 			expect(groups.get('fix')).toHaveLength(1);
 		});
 
+		it('should drop non-conventional commits without a label for other', () => {
+			const commits = [
+				{
+					hash: '1',
+					shortHash: '1',
+					type: 'other',
+					subject: 'PROJ-123: fixed the thing',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+			];
+
+			const groups = groupCommitsByType(commits, { feat: 'Features' });
+
+			expect(groups.has('other')).toBe(false);
+		});
+
+		it('should keep non-conventional commits when other has a label', () => {
+			const commits = [
+				{
+					hash: '1',
+					shortHash: '1',
+					type: 'other',
+					subject: 'PROJ-123: fixed the thing',
+					body: '',
+					author: '',
+					date: '',
+					breaking: false,
+				},
+			];
+
+			const groups = groupCommitsByType(commits, { feat: 'Features', other: 'Other' });
+
+			expect(groups.get('other')).toHaveLength(1);
+		});
+
 		it('should create breaking changes group', () => {
 			const commits = [
 				{
