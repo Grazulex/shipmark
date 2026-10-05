@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.3](https://github.com/Grazulex/shipmark/releases/tag/v2.1.3) (2026-10-05)
+
+### Bug Fixes
+
+- **changelog:** honour commits.conventional for non-conventional commits (#13) ([280830d](https://github.com/Grazulex/shipmark/commit/280830d4307e7e9dee106548327a8890f7fc8c6c))
+
 ## [2.1.2](https://github.com/Grazulex/shipmark/releases/tag/v2.1.2) (2026-03-11)
 ## [2.1.1](https://github.com/Grazulex/shipmark/releases/tag/v2.1.1) (2026-03-11)
 
