@@ -5,7 +5,7 @@
 	"type": "module",
 	"main": "dist/cli.js",
 	"bin": {
-		"shipmark": "./dist/cli.js"
+		"shipmark": "dist/cli.js"
 	},
 	"files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
 	"scripts": {
@@ -25,7 +25,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/grazulex/shipmark.git"
+		"url": "git+https://github.com/grazulex/shipmark.git"
 	},
 	"engines": {
 		"node": ">=18.0.0"

@@ -245,7 +245,9 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	// Summary
 	logger.header('Release Summary');
 	console.log(`  ${colors.muted('Version:')}    ${colors.highlight(newVersionStr)}`);
-	console.log(`  ${colors.muted('Tag:')}        ${colors.highlight(tagName)}`);
+	console.log(
+		`  ${colors.muted('Tag:')}        ${colors.highlight(tagName)}${isPrMode && !options.skipTag ? colors.muted(' (after merge)') : ''}`
+	);
 	console.log(`  ${colors.muted('Commits:')}    ${colors.highlight(commits.length.toString())}`);
 	console.log(`  ${colors.muted('Bump:')}       ${colorizeBumpType(selectedBump)}`);
 	console.log(
@@ -415,8 +417,11 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	git.commit(commitMessage, [], config.git.signCommits);
 	if (!isCiMode) spinner.succeed('Release commit created');
 
-	// Create tag
-	if (!options.skipTag) {
+	// Create tag. In PR mode the release commit only reaches the base branch through the
+	// PR, and a squash or rebase merge replaces it with a new commit: a tag created here
+	// would never be reachable from the base branch, so `git describe` would skip it on
+	// the next release. The tag is created on the base branch after the merge instead.
+	if (!options.skipTag && !isPrMode) {
 		if (!isCiMode) spinner.start('Creating tag...');
 		const tagMessage = config.version.tagMessage.replace('{version}', newVersionStr);
 		git.createTag(tagName, tagMessage, config.git.signTags);
@@ -430,9 +435,6 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			// PR mode: push the release branch and create PR
 			if (!isCiMode) spinner.start(`Pushing release branch ${colors.accent(releaseBranch)}...`);
 			git.pushBranch(releaseBranch, true);
-			if (config.git.pushTags && !options.skipTag) {
-				git.push(true); // Push tags separately
-			}
 			if (!isCiMode) spinner.succeed(`Release branch ${colors.accent(releaseBranch)} pushed`);
 
 			// Create PR
@@ -491,6 +493,24 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 		}
 	}
 
+	const printTagAfterMergeSteps = (firstStep: number): void => {
+		let step = firstStep;
+		if (!options.skipTag) {
+			console.log(`  ${step}. Tag the merged commit on ${colors.accent(baseBranch)}:`);
+			console.log(
+				`     ${colors.accent(`git checkout ${baseBranch} && git pull && shipmark tag create ${tagName} --push`)}`
+			);
+			step++;
+		}
+		if (releaseInfo.releaseCommand) {
+			console.log(`  ${step}. Create a ${releaseInfo.provider} release:`);
+			console.log(`     ${colors.accent(releaseInfo.releaseCommand)}`);
+		} else if (releaseInfo.releaseUrl) {
+			console.log(`  ${step}. Create a ${releaseInfo.provider} release:`);
+			console.log(`     ${colors.accent(releaseInfo.releaseUrl)}`);
+		}
+	};
+
 	// Done!
 	if (isCiMode) {
 		// CI mode: output variables for pipeline consumption
@@ -527,16 +547,11 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 					`  1. Create a pull request from ${colors.accent(releaseBranch || '')} to ${colors.accent(baseBranch)}`
 				);
 				console.log('  2. Get the PR reviewed and merged');
-				console.log(`  3. The release tag ${colors.accent(tagName)} will be available after merge`);
+				printTagAfterMergeSteps(3);
 			} else {
 				logger.info(`${icons.info} Next steps:`);
 				console.log('  1. Get the PR reviewed and merged');
-				console.log(`  2. Create a ${releaseInfo.provider} release after merge:`);
-				if (releaseInfo.releaseCommand) {
-					console.log(`     ${colors.accent(releaseInfo.releaseCommand)}`);
-				} else if (releaseInfo.releaseUrl) {
-					console.log(`     ${colors.accent(releaseInfo.releaseUrl)}`);
-				}
+				printTagAfterMergeSteps(2);
 			}
 		} else {
 			// Normal mode
