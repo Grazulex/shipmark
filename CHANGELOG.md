@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.6](https://github.com/Grazulex/shipmark/releases/tag/v2.1.6) (2026-10-23)
+
+### Security
+
+- Update dependencies within existing ranges: `npm audit` now reports no vulnerabilities (was 1 critical, 7 high, 2 moderate: vitest, vite, esbuild, rollup, picomatch, postcss, nanoid, smol-toml…)
+
 ## [2.1.5](https://github.com/Grazulex/shipmark/releases/tag/v2.1.5) (2026-10-05)
 
 ### Bug Fixes
