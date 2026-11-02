@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.7](https://github.com/Grazulex/shipmark/releases/tag/v2.1.7) (2026-11-02)
+
+### Bug Fixes
+
+- **release:** report a failed release in CI mode ([dbd58ac](https://github.com/Grazulex/shipmark/commit/dbd58acdbdb0a55d6e65b3521721a0c52ec09a56))
+- **release:** use only the new version's changelog entry as release notes ([51cb28b](https://github.com/Grazulex/shipmark/commit/51cb28b076cf3182b9a71e9b342bc8316562fa79))
+- **changelog:** link SSH and self-hosted remotes to their web URL ([36a00e9](https://github.com/Grazulex/shipmark/commit/36a00e912e383953f700ae5e3ce41b0f7dd0f0fc))
+- **release:** detect self-hosted GitHub and GitLab remotes ([5accc7d](https://github.com/Grazulex/shipmark/commit/5accc7dc2ea1268d3948d6f495a5a25692fe8e11))
 ## [2.1.6](https://github.com/Grazulex/shipmark/releases/tag/v2.1.6) (2026-10-23)
 
 ### Security
