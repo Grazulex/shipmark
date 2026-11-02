@@ -1,4 +1,8 @@
 import { execSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { extractVersionEntry } from './changelog-generator';
 import { git } from './git';
 
 export type GitProvider = 'github' | 'gitlab' | 'bitbucket' | 'unknown';
@@ -178,11 +182,38 @@ export function getReleaseProviderInfo(
 	};
 }
 
+/**
+ * Write the version's changelog entry to a temporary file, so the release
+ * notes hold only that version. Falls back to the whole changelog when it has
+ * no entry for the version.
+ */
+function writeReleaseNotes(changelogFile: string, version?: string): string {
+	if (!version || !existsSync(changelogFile)) return changelogFile;
+
+	const notes = extractVersionEntry(readFileSync(changelogFile, 'utf8'), version);
+	if (notes === null) return changelogFile;
+
+	const notesFile = join(mkdtempSync(join(tmpdir(), 'shipmark-')), 'release-notes.md');
+	writeFileSync(notesFile, `${notes}\n`, 'utf8');
+	return notesFile;
+}
+
 export function executeRelease(
 	tag: string,
-	changelogFile = 'CHANGELOG.md'
+	changelogFile = 'CHANGELOG.md',
+	version?: string
 ): { success: boolean; output: string } {
-	const info = getReleaseProviderInfo(tag, changelogFile);
+	const notesFile = writeReleaseNotes(changelogFile, version);
+
+	try {
+		return runRelease(tag, notesFile);
+	} finally {
+		if (notesFile !== changelogFile) rmSync(dirname(notesFile), { recursive: true, force: true });
+	}
+}
+
+function runRelease(tag: string, notesFile: string): { success: boolean; output: string } {
+	const info = getReleaseProviderInfo(tag, notesFile);
 
 	if (!info.releaseCommand) {
 		return {

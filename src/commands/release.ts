@@ -470,7 +470,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (options.createRelease && !options.skipPush && git.hasRemote() && !isPrMode) {
 		if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
 			if (!isCiMode) spinner.start(`Creating ${releaseInfo.provider} release...`);
-			const result = executeRelease(tagName, config.changelog.file);
+			const result = executeRelease(tagName, config.changelog.file, newVersionStr);
 			if (result.success) {
 				if (!isCiMode) spinner.succeed(`${releaseInfo.provider} release created`);
 			} else {

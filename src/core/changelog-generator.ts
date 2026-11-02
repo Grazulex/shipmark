@@ -136,6 +136,22 @@ export function generateFullChangelog(
 	return header + newEntry;
 }
 
+/**
+ * Return the body of one version's entry, without its heading, or null when
+ * the changelog has no entry for that version.
+ */
+export function extractVersionEntry(content: string, version: string): string | null {
+	const versionPattern = new RegExp(`^## \\[?${escapeRegex(version)}(?:\\]|\\s|$)`, 'm');
+	const versionStart = content.search(versionPattern);
+	if (versionStart === -1) return null;
+
+	const entry = content.slice(versionStart);
+	const nextVersionStart = entry.slice(1).search(/^## /m);
+	const fullEntry = nextVersionStart === -1 ? entry : entry.slice(0, nextVersionStart + 1);
+
+	return fullEntry.slice(fullEntry.indexOf('\n') + 1).trim();
+}
+
 function escapeRegex(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
