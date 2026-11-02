@@ -473,8 +473,10 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			const result = executeRelease(tagName, config.changelog.file, newVersionStr);
 			if (result.success) {
 				if (!isCiMode) spinner.succeed(`${releaseInfo.provider} release created`);
+			} else if (isCiMode) {
+				logger.error(`Failed to create release: ${result.output}`);
 			} else {
-				if (!isCiMode) spinner.fail(`Failed to create release: ${result.output}`);
+				spinner.fail(`Failed to create release: ${result.output}`);
 			}
 		} else if (releaseInfo.cli) {
 			logger.warning(
