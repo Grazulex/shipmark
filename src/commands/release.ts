@@ -24,6 +24,7 @@ import {
 	executeRelease,
 	getPullRequestInfo,
 	getReleaseProviderInfo,
+	getRepositoryLinks,
 } from '../core/release-provider';
 import * as semver from '../core/semver';
 import { normalizeFileConfig } from '../handlers/types';
@@ -266,10 +267,6 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (options.dryRun) {
 		if (!options.skipChangelog && commits.length > 0) {
 			const today = new Date().toISOString().split('T')[0];
-			const remoteUrl = git
-				.getRemoteUrl()
-				?.replace(/\.git$/, '')
-				.replace(/^git@github.com:/, 'https://github.com/');
 
 			const changelogEntry = generateChangelog({
 				version: newVersionStr,
@@ -277,7 +274,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 				commits,
 				config: config.changelog,
 				commitsConfig: config.commits,
-				repoUrl: remoteUrl || undefined,
+				...getRepositoryLinks(),
 			});
 
 			logger.header('Changelog Output (dry-run)');
@@ -384,10 +381,6 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (!options.skipChangelog) {
 		if (!isCiMode) spinner.start('Generating changelog...');
 		const today = new Date().toISOString().split('T')[0];
-		const remoteUrl = git
-			.getRemoteUrl()
-			?.replace(/\.git$/, '')
-			.replace(/^git@github.com:/, 'https://github.com/');
 
 		const changelogEntry = generateChangelog({
 			version: newVersionStr,
@@ -395,7 +388,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			commits,
 			config: config.changelog,
 			commitsConfig: config.commits,
-			repoUrl: remoteUrl || undefined,
+			...getRepositoryLinks(),
 		});
 
 		const changelogPath = join(cwd, config.changelog.file);

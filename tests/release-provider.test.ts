@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectProvider } from '../src/core/release-provider';
+import { detectProvider, toWebUrl } from '../src/core/release-provider';
 
 describe('detectProvider', () => {
 	it('should detect the hosted providers', () => {
@@ -29,5 +29,30 @@ describe('detectProvider', () => {
 	it('should return unknown for other hosts and local paths', () => {
 		expect(detectProvider('git@git.example.com:owner/repo.git')).toBe('unknown');
 		expect(detectProvider('/srv/git/repo.git')).toBe('unknown');
+	});
+});
+
+describe('toWebUrl', () => {
+	it('should convert SSH remotes to an HTTPS URL', () => {
+		expect(toWebUrl('git@gitlab.example.com:group/repo.git')).toBe(
+			'https://gitlab.example.com/group/repo'
+		);
+		expect(toWebUrl('ssh://git@gitlab.example.com:2222/group/repo.git')).toBe(
+			'https://gitlab.example.com/group/repo'
+		);
+	});
+
+	it('should keep an HTTPS remote without its credentials', () => {
+		expect(toWebUrl('https://ci-token:secret@gitlab.example.com/group/repo.git')).toBe(
+			'https://gitlab.example.com/group/repo'
+		);
+		expect(toWebUrl('https://git.example.com:8443/owner/repo')).toBe(
+			'https://git.example.com:8443/owner/repo'
+		);
+	});
+
+	it('should return null for local paths', () => {
+		expect(toWebUrl('/srv/git/repo.git')).toBeNull();
+		expect(toWebUrl('file:///srv/git/repo.git')).toBeNull();
 	});
 });

@@ -207,6 +207,22 @@ describe('changelog-generator', () => {
 			expect(result).toContain('[1.0.0](https://github.com/user/repo/releases/tag/v1.0.0)');
 			expect(result).toContain('[abc123d](https://github.com/user/repo/commit/abc123def456)');
 		});
+
+		it('should generate GitLab links when the provider is gitlab', () => {
+			const result = generateChangelog({
+				version: '1.0.0',
+				date: '2024-01-15',
+				commits: sampleCommits,
+				config: defaultConfig,
+				repoUrl: 'https://gitlab.example.com/group/repo',
+				provider: 'gitlab',
+			});
+
+			expect(result).toContain('[1.0.0](https://gitlab.example.com/group/repo/-/releases/v1.0.0)');
+			expect(result).toContain(
+				'[abc123d](https://gitlab.example.com/group/repo/-/commit/abc123def456)'
+			);
+		});
 	});
 
 	describe('generateFullChangelog', () => {

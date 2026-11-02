@@ -75,6 +75,39 @@ function getRemoteHost(remoteUrl: string): string {
 	}
 }
 
+function stripGitSuffix(path: string): string {
+	return path.replace(/\.git$/, '').replace(/\/$/, '');
+}
+
+/**
+ * Convert a git remote URL to the repository's web URL. Credentials and SSH
+ * ports are dropped, so neither ends up in a link.
+ */
+export function toWebUrl(remoteUrl: string): string | null {
+	try {
+		const url = new URL(remoteUrl);
+		if (!url.hostname) return null;
+
+		const isWeb = url.protocol === 'http:' || url.protocol === 'https:';
+		const origin = isWeb ? `${url.protocol}//${url.host}` : `https://${url.hostname}`;
+		return `${origin}${stripGitSuffix(url.pathname)}`;
+	} catch {
+		// scp-like syntax has no scheme: [user@]host:owner/repo.git
+		const match = remoteUrl.match(/^(?:[^@:/]+@)?([^:/]+):(.+)$/);
+		return match ? `https://${match[1]}/${stripGitSuffix(match[2])}` : null;
+	}
+}
+
+/**
+ * The repository's web URL and provider, used to build links in the changelog.
+ */
+export function getRepositoryLinks(): { repoUrl?: string; provider?: GitProvider } {
+	const remoteUrl = git.getRemoteUrl();
+	if (!remoteUrl) return {};
+
+	return { repoUrl: toWebUrl(remoteUrl) ?? undefined, provider: detectProvider(remoteUrl) };
+}
+
 export function detectProvider(remoteUrl: string): GitProvider {
 	// Match on the host only, so self-hosted instances such as gitlab.example.com are detected too
 	const host = getRemoteHost(remoteUrl);
@@ -89,10 +122,8 @@ export function detectProvider(remoteUrl: string): GitProvider {
 }
 
 function getWebReleaseUrl(remoteUrl: string, provider: GitProvider, tag: string): string | null {
-	if (provider === 'unknown') return null;
-
-	// Convert git URL to HTTPS URL
-	const httpsUrl = remoteUrl.replace(/^git@([^:]+):/, 'https://$1/').replace(/\.git$/, '');
+	const httpsUrl = toWebUrl(remoteUrl);
+	if (provider === 'unknown' || !httpsUrl) return null;
 
 	switch (provider) {
 		case 'github':
@@ -182,10 +213,8 @@ export function executeRelease(
 }
 
 function getWebPrUrl(remoteUrl: string, provider: GitProvider, branch: string): string | null {
-	if (provider === 'unknown') return null;
-
-	// Convert git URL to HTTPS URL
-	const httpsUrl = remoteUrl.replace(/^git@([^:]+):/, 'https://$1/').replace(/\.git$/, '');
+	const httpsUrl = toWebUrl(remoteUrl);
+	if (provider === 'unknown' || !httpsUrl) return null;
 
 	switch (provider) {
 		case 'github':

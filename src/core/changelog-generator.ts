@@ -2,6 +2,7 @@ import type { ParsedCommit } from '../types/commit';
 import { COMMIT_TYPES, COMMIT_TYPE_ORDER, OTHER_COMMIT_LABEL } from '../types/commit';
 import type { ChangelogConfig, CommitConfig } from '../types/config';
 import { groupCommitsByType, sortCommitGroups } from './log-parser';
+import type { GitProvider } from './release-provider';
 
 export interface ChangelogOptions {
 	version: string;
@@ -10,6 +11,7 @@ export interface ChangelogOptions {
 	config: ChangelogConfig;
 	commitsConfig?: CommitConfig;
 	repoUrl?: string;
+	provider?: GitProvider;
 }
 
 /**
@@ -32,11 +34,16 @@ export function buildTypeLabels(
 }
 
 export function generateChangelog(options: ChangelogOptions): string {
-	const { version, date, commits, config, commitsConfig, repoUrl } = options;
+	const { version, date, commits, config, commitsConfig, repoUrl, provider } = options;
 	const lines: string[] = [];
+	// GitLab serves project pages under /-/
+	const pathPrefix = provider === 'gitlab' ? '/-' : '';
+	const releasePath = provider === 'gitlab' ? 'releases' : 'releases/tag';
 
 	// Header
-	const versionHeader = repoUrl ? `[${version}](${repoUrl}/releases/tag/v${version})` : version;
+	const versionHeader = repoUrl
+		? `[${version}](${repoUrl}${pathPrefix}/${releasePath}/v${version})`
+		: version;
 	lines.push(`## ${versionHeader} (${date})`);
 	lines.push('');
 
@@ -52,7 +59,7 @@ export function generateChangelog(options: ChangelogOptions): string {
 		lines.push('');
 
 		for (const commit of typeCommits) {
-			const line = formatCommitLine(commit, config, repoUrl);
+			const line = formatCommitLine(commit, config, repoUrl && `${repoUrl}${pathPrefix}`);
 			lines.push(line);
 		}
 
