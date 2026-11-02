@@ -490,6 +490,10 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			if (releaseInfo.releaseCommand) {
 				logger.info(`Run manually: ${colors.accent(releaseInfo.releaseCommand)}`);
 			}
+		} else {
+			logger.warning(
+				'Could not detect GitHub or GitLab from the remote URL. Skipped creating the release.'
+			);
 		}
 	}
 

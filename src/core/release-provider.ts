@@ -29,21 +29,21 @@ const PROVIDER_CONFIG: Record<
 	}
 > = {
 	github: {
-		hosts: ['github.com'],
+		hosts: ['github'],
 		cli: 'gh',
 		releaseCmd: (tag, notesFile) => `gh release create ${tag} --notes-file ${notesFile}`,
 		prCmd: (title, body, base) =>
 			`gh pr create --title "${title}" --body "${body}" --base "${base}"`,
 	},
 	gitlab: {
-		hosts: ['gitlab.com'],
+		hosts: ['gitlab'],
 		cli: 'glab',
 		releaseCmd: (tag, notesFile) => `glab release create ${tag} --notes-file ${notesFile}`,
 		prCmd: (title, body, base) =>
 			`glab mr create --title "${title}" --description "${body}" --target-branch "${base}"`,
 	},
 	bitbucket: {
-		hosts: ['bitbucket.org'],
+		hosts: ['bitbucket'],
 		cli: 'bb', // Bitbucket CLI is less common
 		releaseCmd: () => '', // Bitbucket doesn't have native releases like GitHub/GitLab
 		prCmd: () => '', // Bitbucket CLI doesn't support PR creation the same way
@@ -65,11 +65,22 @@ function isCliAvailable(cli: string): boolean {
 	}
 }
 
-function detectProvider(remoteUrl: string): GitProvider {
-	const urlLower = remoteUrl.toLowerCase();
+function getRemoteHost(remoteUrl: string): string {
+	try {
+		return new URL(remoteUrl).hostname.toLowerCase();
+	} catch {
+		// scp-like syntax has no scheme: [user@]host:owner/repo.git
+		const match = remoteUrl.match(/^(?:[^@:/]+@)?([^:/]+):/);
+		return match ? match[1].toLowerCase() : '';
+	}
+}
+
+export function detectProvider(remoteUrl: string): GitProvider {
+	// Match on the host only, so self-hosted instances such as gitlab.example.com are detected too
+	const host = getRemoteHost(remoteUrl);
 
 	for (const [provider, config] of Object.entries(PROVIDER_CONFIG)) {
-		if (config.hosts.some((host) => urlLower.includes(host))) {
+		if (config.hosts.some((name) => host.includes(name))) {
 			return provider as GitProvider;
 		}
 	}
