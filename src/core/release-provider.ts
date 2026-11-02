@@ -1,4 +1,8 @@
 import { execSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { extractVersionEntry } from './changelog-generator';
 import { git } from './git';
 
 export type GitProvider = 'github' | 'gitlab' | 'bitbucket' | 'unknown';
@@ -29,21 +33,21 @@ const PROVIDER_CONFIG: Record<
 	}
 > = {
 	github: {
-		hosts: ['github.com'],
+		hosts: ['github'],
 		cli: 'gh',
 		releaseCmd: (tag, notesFile) => `gh release create ${tag} --notes-file ${notesFile}`,
 		prCmd: (title, body, base) =>
 			`gh pr create --title "${title}" --body "${body}" --base "${base}"`,
 	},
 	gitlab: {
-		hosts: ['gitlab.com'],
+		hosts: ['gitlab'],
 		cli: 'glab',
 		releaseCmd: (tag, notesFile) => `glab release create ${tag} --notes-file ${notesFile}`,
 		prCmd: (title, body, base) =>
 			`glab mr create --title "${title}" --description "${body}" --target-branch "${base}"`,
 	},
 	bitbucket: {
-		hosts: ['bitbucket.org'],
+		hosts: ['bitbucket'],
 		cli: 'bb', // Bitbucket CLI is less common
 		releaseCmd: () => '', // Bitbucket doesn't have native releases like GitHub/GitLab
 		prCmd: () => '', // Bitbucket CLI doesn't support PR creation the same way
@@ -65,11 +69,55 @@ function isCliAvailable(cli: string): boolean {
 	}
 }
 
-function detectProvider(remoteUrl: string): GitProvider {
-	const urlLower = remoteUrl.toLowerCase();
+function getRemoteHost(remoteUrl: string): string {
+	try {
+		return new URL(remoteUrl).hostname.toLowerCase();
+	} catch {
+		// scp-like syntax has no scheme: [user@]host:owner/repo.git
+		const match = remoteUrl.match(/^(?:[^@:/]+@)?([^:/]+):/);
+		return match ? match[1].toLowerCase() : '';
+	}
+}
+
+function stripGitSuffix(path: string): string {
+	return path.replace(/\.git$/, '').replace(/\/$/, '');
+}
+
+/**
+ * Convert a git remote URL to the repository's web URL. Credentials and SSH
+ * ports are dropped, so neither ends up in a link.
+ */
+export function toWebUrl(remoteUrl: string): string | null {
+	try {
+		const url = new URL(remoteUrl);
+		if (!url.hostname) return null;
+
+		const isWeb = url.protocol === 'http:' || url.protocol === 'https:';
+		const origin = isWeb ? `${url.protocol}//${url.host}` : `https://${url.hostname}`;
+		return `${origin}${stripGitSuffix(url.pathname)}`;
+	} catch {
+		// scp-like syntax has no scheme: [user@]host:owner/repo.git
+		const match = remoteUrl.match(/^(?:[^@:/]+@)?([^:/]+):(.+)$/);
+		return match ? `https://${match[1]}/${stripGitSuffix(match[2])}` : null;
+	}
+}
+
+/**
+ * The repository's web URL and provider, used to build links in the changelog.
+ */
+export function getRepositoryLinks(): { repoUrl?: string; provider?: GitProvider } {
+	const remoteUrl = git.getRemoteUrl();
+	if (!remoteUrl) return {};
+
+	return { repoUrl: toWebUrl(remoteUrl) ?? undefined, provider: detectProvider(remoteUrl) };
+}
+
+export function detectProvider(remoteUrl: string): GitProvider {
+	// Match on the host only, so self-hosted instances such as gitlab.example.com are detected too
+	const host = getRemoteHost(remoteUrl);
 
 	for (const [provider, config] of Object.entries(PROVIDER_CONFIG)) {
-		if (config.hosts.some((host) => urlLower.includes(host))) {
+		if (config.hosts.some((name) => host.includes(name))) {
 			return provider as GitProvider;
 		}
 	}
@@ -78,10 +126,8 @@ function detectProvider(remoteUrl: string): GitProvider {
 }
 
 function getWebReleaseUrl(remoteUrl: string, provider: GitProvider, tag: string): string | null {
-	if (provider === 'unknown') return null;
-
-	// Convert git URL to HTTPS URL
-	const httpsUrl = remoteUrl.replace(/^git@([^:]+):/, 'https://$1/').replace(/\.git$/, '');
+	const httpsUrl = toWebUrl(remoteUrl);
+	if (provider === 'unknown' || !httpsUrl) return null;
 
 	switch (provider) {
 		case 'github':
@@ -136,11 +182,38 @@ export function getReleaseProviderInfo(
 	};
 }
 
+/**
+ * Write the version's changelog entry to a temporary file, so the release
+ * notes hold only that version. Falls back to the whole changelog when it has
+ * no entry for the version.
+ */
+function writeReleaseNotes(changelogFile: string, version?: string): string {
+	if (!version || !existsSync(changelogFile)) return changelogFile;
+
+	const notes = extractVersionEntry(readFileSync(changelogFile, 'utf8'), version);
+	if (notes === null) return changelogFile;
+
+	const notesFile = join(mkdtempSync(join(tmpdir(), 'shipmark-')), 'release-notes.md');
+	writeFileSync(notesFile, `${notes}\n`, 'utf8');
+	return notesFile;
+}
+
 export function executeRelease(
 	tag: string,
-	changelogFile = 'CHANGELOG.md'
+	changelogFile = 'CHANGELOG.md',
+	version?: string
 ): { success: boolean; output: string } {
-	const info = getReleaseProviderInfo(tag, changelogFile);
+	const notesFile = writeReleaseNotes(changelogFile, version);
+
+	try {
+		return runRelease(tag, notesFile);
+	} finally {
+		if (notesFile !== changelogFile) rmSync(dirname(notesFile), { recursive: true, force: true });
+	}
+}
+
+function runRelease(tag: string, notesFile: string): { success: boolean; output: string } {
+	const info = getReleaseProviderInfo(tag, notesFile);
 
 	if (!info.releaseCommand) {
 		return {
@@ -171,10 +244,8 @@ export function executeRelease(
 }
 
 function getWebPrUrl(remoteUrl: string, provider: GitProvider, branch: string): string | null {
-	if (provider === 'unknown') return null;
-
-	// Convert git URL to HTTPS URL
-	const httpsUrl = remoteUrl.replace(/^git@([^:]+):/, 'https://$1/').replace(/\.git$/, '');
+	const httpsUrl = toWebUrl(remoteUrl);
+	if (provider === 'unknown' || !httpsUrl) return null;
 
 	switch (provider) {
 		case 'github':

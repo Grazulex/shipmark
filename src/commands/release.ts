@@ -24,6 +24,7 @@ import {
 	executeRelease,
 	getPullRequestInfo,
 	getReleaseProviderInfo,
+	getRepositoryLinks,
 } from '../core/release-provider';
 import * as semver from '../core/semver';
 import { normalizeFileConfig } from '../handlers/types';
@@ -266,10 +267,6 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (options.dryRun) {
 		if (!options.skipChangelog && commits.length > 0) {
 			const today = new Date().toISOString().split('T')[0];
-			const remoteUrl = git
-				.getRemoteUrl()
-				?.replace(/\.git$/, '')
-				.replace(/^git@github.com:/, 'https://github.com/');
 
 			const changelogEntry = generateChangelog({
 				version: newVersionStr,
@@ -277,7 +274,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 				commits,
 				config: config.changelog,
 				commitsConfig: config.commits,
-				repoUrl: remoteUrl || undefined,
+				...getRepositoryLinks(),
 			});
 
 			logger.header('Changelog Output (dry-run)');
@@ -384,10 +381,6 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (!options.skipChangelog) {
 		if (!isCiMode) spinner.start('Generating changelog...');
 		const today = new Date().toISOString().split('T')[0];
-		const remoteUrl = git
-			.getRemoteUrl()
-			?.replace(/\.git$/, '')
-			.replace(/^git@github.com:/, 'https://github.com/');
 
 		const changelogEntry = generateChangelog({
 			version: newVersionStr,
@@ -395,7 +388,7 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			commits,
 			config: config.changelog,
 			commitsConfig: config.commits,
-			repoUrl: remoteUrl || undefined,
+			...getRepositoryLinks(),
 		});
 
 		const changelogPath = join(cwd, config.changelog.file);
@@ -477,11 +470,13 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 	if (options.createRelease && !options.skipPush && git.hasRemote() && !isPrMode) {
 		if (releaseInfo.cliAvailable && releaseInfo.releaseCommand) {
 			if (!isCiMode) spinner.start(`Creating ${releaseInfo.provider} release...`);
-			const result = executeRelease(tagName, config.changelog.file);
+			const result = executeRelease(tagName, config.changelog.file, newVersionStr);
 			if (result.success) {
 				if (!isCiMode) spinner.succeed(`${releaseInfo.provider} release created`);
+			} else if (isCiMode) {
+				logger.error(`Failed to create release: ${result.output}`);
 			} else {
-				if (!isCiMode) spinner.fail(`Failed to create release: ${result.output}`);
+				spinner.fail(`Failed to create release: ${result.output}`);
 			}
 		} else if (releaseInfo.cli) {
 			logger.warning(
@@ -490,6 +485,10 @@ async function runRelease(options: ReleaseOptions): Promise<void> {
 			if (releaseInfo.releaseCommand) {
 				logger.info(`Run manually: ${colors.accent(releaseInfo.releaseCommand)}`);
 			}
+		} else {
+			logger.warning(
+				'Could not detect GitHub or GitLab from the remote URL. Skipped creating the release.'
+			);
 		}
 	}
 

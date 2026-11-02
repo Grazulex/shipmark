@@ -12,6 +12,7 @@ import {
 import { getVersionFromPackageJson, loadConfig } from '../core/config';
 import { git } from '../core/git';
 import { parseCommits } from '../core/log-parser';
+import { getRepositoryLinks } from '../core/release-provider';
 import { colors } from '../utils/colors';
 import { handleError } from '../utils/errors';
 import { logger, warnAboutSkippedCommits } from '../utils/logger';
@@ -89,10 +90,6 @@ async function runChangelog(options: ChangelogOptions): Promise<void> {
 	// Generate changelog
 	spinner.start('Generating changelog...');
 	const today = new Date().toISOString().split('T')[0];
-	const remoteUrl = git
-		.getRemoteUrl()
-		?.replace(/\.git$/, '')
-		.replace(/^git@github.com:/, 'https://github.com/');
 
 	const changelogEntry = generateChangelog({
 		version,
@@ -100,7 +97,7 @@ async function runChangelog(options: ChangelogOptions): Promise<void> {
 		commits,
 		config: config.changelog,
 		commitsConfig: config.commits,
-		repoUrl: remoteUrl || undefined,
+		...getRepositoryLinks(),
 	});
 
 	// Output file

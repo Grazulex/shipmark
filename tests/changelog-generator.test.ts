@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	buildTypeLabels,
+	extractVersionEntry,
 	generateChangelog,
 	generateFullChangelog,
 	previewChangelog,
@@ -206,6 +207,60 @@ describe('changelog-generator', () => {
 
 			expect(result).toContain('[1.0.0](https://github.com/user/repo/releases/tag/v1.0.0)');
 			expect(result).toContain('[abc123d](https://github.com/user/repo/commit/abc123def456)');
+		});
+
+		it('should generate GitLab links when the provider is gitlab', () => {
+			const result = generateChangelog({
+				version: '1.0.0',
+				date: '2024-01-15',
+				commits: sampleCommits,
+				config: defaultConfig,
+				repoUrl: 'https://gitlab.example.com/group/repo',
+				provider: 'gitlab',
+			});
+
+			expect(result).toContain('[1.0.0](https://gitlab.example.com/group/repo/-/releases/v1.0.0)');
+			expect(result).toContain(
+				'[abc123d](https://gitlab.example.com/group/repo/-/commit/abc123def456)'
+			);
+		});
+	});
+
+	describe('extractVersionEntry', () => {
+		const changelog = [
+			'# Changelog',
+			'',
+			'## [1.1.0](https://example.com/releases/tag/v1.1.0) (2024-02-01)',
+			'',
+			'### Features',
+			'',
+			'- new feature',
+			'',
+			'## [1.1.0-beta.1](https://example.com/releases/tag/v1.1.0-beta.1) (2024-01-20)',
+			'',
+			'- beta feature',
+			'',
+			'## 1.0.0 (2024-01-15)',
+			'',
+			'- first release',
+			'',
+		].join('\n');
+
+		it('should return the entry body without its heading', () => {
+			expect(extractVersionEntry(changelog, '1.1.0')).toBe('### Features\n\n- new feature');
+		});
+
+		it('should return the last entry up to the end of the file', () => {
+			expect(extractVersionEntry(changelog, '1.0.0')).toBe('- first release');
+		});
+
+		it('should not match a prerelease of the same version', () => {
+			expect(extractVersionEntry(changelog, '1.1.0-beta.1')).toBe('- beta feature');
+			expect(extractVersionEntry('## [1.1.0-beta.1]\n\n- beta', '1.1.0')).toBeNull();
+		});
+
+		it('should return null when the version has no entry', () => {
+			expect(extractVersionEntry(changelog, '2.0.0')).toBeNull();
 		});
 	});
 
