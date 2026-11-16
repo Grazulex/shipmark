@@ -73,6 +73,29 @@ describe('log-parser', () => {
 			expect(result.breakingNote).toBe('this breaks everything');
 		});
 
+		it('should parse BREAKING-CHANGE footer with a hyphen', () => {
+			const commit = {
+				...baseCommit,
+				subject: 'fix: handle config',
+				body: 'BREAKING-CHANGE: config key renamed',
+			};
+			const result = parseConventionalCommit(commit);
+
+			expect(result.breaking).toBe(true);
+			expect(result.breakingNote).toBe('config key renamed');
+		});
+
+		it('should not treat BREAKINGCHANGE without separator as breaking', () => {
+			const commit = {
+				...baseCommit,
+				subject: 'fix: handle config',
+				body: 'BREAKINGCHANGE: not a valid footer',
+			};
+			const result = parseConventionalCommit(commit);
+
+			expect(result.breaking).toBe(false);
+		});
+
 		it('should handle non-conventional commit', () => {
 			const commit = { ...baseCommit, subject: 'Update readme file' };
 			const result = parseConventionalCommit(commit);
