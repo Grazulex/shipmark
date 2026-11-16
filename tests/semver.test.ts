@@ -123,6 +123,31 @@ describe('semver', () => {
 			expect(result.prerelease).toBe('alpha');
 			expect(result.prereleaseNumber).toBe(2);
 		});
+
+		describe('stable bump from a prerelease', () => {
+			const cases: Array<[string, 'patch' | 'minor' | 'major', string]> = [
+				['2.0.0-rc.1', 'patch', '2.0.0'],
+				['2.0.0-rc.1', 'minor', '2.0.0'],
+				['2.0.0-rc.1', 'major', '2.0.0'],
+				['1.3.0-beta.1', 'patch', '1.3.0'],
+				['1.3.0-beta.1', 'minor', '1.3.0'],
+				['1.3.0-beta.1', 'major', '2.0.0'],
+				['1.2.4-alpha.1', 'patch', '1.2.4'],
+				['1.2.4-alpha.1', 'minor', '1.3.0'],
+				['1.2.4-alpha.1', 'major', '2.0.0'],
+			];
+
+			it.each(cases)('%s + %s -> %s', (from, type, expected) => {
+				const result = semver.bump(semver.parse(from), type);
+				expect(semver.format(result)).toBe(expected);
+			});
+		});
+
+		it('should offer graduating a prerelease in bump options', () => {
+			const options = semver.getBumpOptions(semver.parse('2.0.0-rc.1'));
+			const patch = options.find((o) => o.type === 'patch');
+			expect(patch?.newVersion).toBe('2.0.0');
+		});
 	});
 
 	describe('compare', () => {

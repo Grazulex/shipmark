@@ -1,7 +1,7 @@
 import type { ParsedCommit, RawCommit } from '../types/commit';
 
 const CONVENTIONAL_REGEX = /^(\w+)(?:\(([^)]+)\))?(!)?:\s*(.+)$/;
-const BREAKING_CHANGE_REGEX = /^BREAKING\s*CHANGE:\s*(.+)$/im;
+const BREAKING_CHANGE_REGEX = /^BREAKING[ -]CHANGE:\s*(.+)$/im;
 
 export function parseConventionalCommit(commit: RawCommit): ParsedCommit {
 	const match = commit.subject.match(CONVENTIONAL_REGEX);

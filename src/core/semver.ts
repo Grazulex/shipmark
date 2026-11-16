@@ -54,20 +54,28 @@ export function bump(
 	newVersion.prereleaseNumber = undefined;
 	newVersion.build = undefined;
 
+	// A prerelease already targets its base version (2.0.0-rc.1 < 2.0.0), so a stable
+	// bump only increments when the base does not already satisfy the requested level.
 	switch (type) {
 		case 'major':
-			newVersion.major += 1;
+			if (!version.prerelease || version.minor !== 0 || version.patch !== 0) {
+				newVersion.major += 1;
+			}
 			newVersion.minor = 0;
 			newVersion.patch = 0;
 			break;
 
 		case 'minor':
-			newVersion.minor += 1;
+			if (!version.prerelease || version.patch !== 0) {
+				newVersion.minor += 1;
+			}
 			newVersion.patch = 0;
 			break;
 
 		case 'patch':
-			newVersion.patch += 1;
+			if (!version.prerelease) {
+				newVersion.patch += 1;
+			}
 			break;
 
 		case 'premajor':
