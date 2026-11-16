@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.8](https://github.com/Grazulex/shipmark/releases/tag/v2.1.8) (2026-11-16)
+
+### Bug Fixes
+
+- graduate prereleases on stable bump (`2.0.0-rc.1` → `2.0.0`) and accept `BREAKING-CHANGE:` footer ([2f37a85](https://github.com/Grazulex/shipmark/commit/2f37a85a48f544de8e1dddd04e2265b357c6a57b)), closes [#22](https://github.com/Grazulex/shipmark/issues/22)
+
 ## [2.1.7](https://github.com/Grazulex/shipmark/releases/tag/v2.1.7) (2026-11-02)
 
 ### Bug Fixes
